@@ -140,11 +140,31 @@ function buildCardsFromSubject(subject, topic, total) {
     question: question
       .replaceAll("{subject}", subject)
       .replaceAll("{topic}", topicLabel),
-    answer: `Completa esta respuesta con tu definicion breve de ${topicLabel} dentro de ${subject}.`
+    answer: buildStarterAnswer(question, subject, topicLabel)
   }));
 
   const suggestionCards = knownCards.map(([question, answer]) => ({ question, answer }));
   return [...suggestionCards, ...generatedStarters].slice(0, total);
+}
+
+function buildStarterAnswer(question, subject, topicLabel) {
+  if (question.includes("definicion")) {
+    return `${topicLabel} es un concepto clave dentro de ${subject}. Define su significado central con tus propias palabras y agrega una idea principal.`;
+  }
+
+  if (question.includes("importante")) {
+    return `${topicLabel} es importante en ${subject} porque ayuda a comprender mejor sus conceptos, aplicaciones y relaciones con otros temas.`;
+  }
+
+  if (question.includes("caracteristicas")) {
+    return `Resume ${topicLabel} con 2 o 3 caracteristicas esenciales, usando lenguaje simple y preciso dentro del contexto de ${subject}.`;
+  }
+
+  if (question.includes("ejemplo")) {
+    return `Piensa en un ejemplo concreto de ${topicLabel} dentro de ${subject} y usalo para recordar el concepto de forma mas facil.`;
+  }
+
+  return `Evita memorizar ${topicLabel} sin contexto: relaciona el tema con definiciones, ejemplos y aplicaciones dentro de ${subject}.`;
 }
 
 function buildFallbackCards(subject, topic, notes, total) {
@@ -229,7 +249,7 @@ form.addEventListener("submit", async (event) => {
     updateUiState({
       mode: "Modo local",
       state: "Fallback",
-      message: "La IA aun no esta configurada o fallo la llamada. Se usaron tarjetas locales para que sigas probando."
+      message: `La IA no respondio correctamente. Se usaron tarjetas locales. Detalle: ${error instanceof Error ? error.message : "Error desconocido."}`
     });
   }
 });
