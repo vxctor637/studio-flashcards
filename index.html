@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FlashCards de Estudio</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="hero">
+        <p class="eyebrow">Estudio Inteligente</p>
+        <h1>Crea tarjetas de estudio con IA</h1>
+        <p class="hero-copy">
+          Escribe la materia, agrega un tema y la app intentara generar
+          flashcards con IA. Si aun no configuraste tu clave, seguira usando un
+          modo local para que puedas avanzar hoy mismo.
+        </p>
+      </section>
+
+      <section class="panel form-panel">
+        <form id="flashcard-form">
+          <label for="subject">Materia</label>
+          <input
+            id="subject"
+            name="subject"
+            type="text"
+            placeholder="Ej: Biologia, Historia, Matematicas"
+            required
+          />
+
+          <label for="topic">Tema</label>
+          <input
+            id="topic"
+            name="topic"
+            type="text"
+            placeholder="Ej: Celulas, Revolucion Francesa, Algebra"
+          />
+
+          <label for="notes">Apuntes o contenido base</label>
+          <textarea
+            id="notes"
+            name="notes"
+            rows="8"
+            placeholder="Pega aqui definiciones, conceptos, fechas, formulas o ideas clave para que la IA cree mejores tarjetas."
+          ></textarea>
+
+          <div class="form-grid">
+            <div>
+              <label for="card-total">Cantidad de tarjetas</label>
+              <select id="card-total" name="cardTotal">
+                <option value="5">5</option>
+                <option value="8" selected>8</option>
+                <option value="10">10</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="difficulty">Nivel</label>
+              <select id="difficulty" name="difficulty">
+                <option value="basico">Basico</option>
+                <option value="intermedio" selected>Intermedio</option>
+                <option value="avanzado">Avanzado</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="actions">
+            <button type="submit" id="generate-button">Generar con IA</button>
+            <button type="button" id="load-demo" class="secondary">
+              Cargar ejemplo
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <section class="panel summary-panel">
+        <div class="summary-row">
+          <span>Tarjetas generadas</span>
+          <strong id="card-count">0</strong>
+        </div>
+        <div class="summary-row">
+          <span>Modo activo</span>
+          <strong id="generation-mode">Listo para IA</strong>
+        </div>
+        <div class="summary-row">
+          <span>Estado</span>
+          <strong id="generation-status">Esperando datos</strong>
+        </div>
+      </section>
+
+      <section class="panel results-panel">
+        <div class="results-header">
+          <div>
+            <p class="eyebrow">Tus Tarjetas</p>
+            <h2>Lista para practicar</h2>
+          </div>
+          <button type="button" id="shuffle-cards" class="secondary">
+            Mezclar
+          </button>
+        </div>
+
+        <p id="status-message" class="status-message">
+          Completa la materia y genera tus primeras tarjetas.
+        </p>
+
+        <div id="empty-state" class="empty-state">
+          Cuando actives la version con OpenAI, esta seccion recibira tarjetas
+          generadas automaticamente por IA.
+        </div>
+
+        <div id="cards-grid" class="cards-grid" aria-live="polite"></div>
+      </section>
+    </main>
+
+    <template id="card-template">
+      <article class="flashcard" tabindex="0">
+        <div class="flashcard-inner">
+          <div class="flashcard-face flashcard-front">
+            <span class="card-tag">Pregunta</span>
+            <h3 class="card-question"></h3>
+          </div>
+          <div class="flashcard-face flashcard-back">
+            <span class="card-tag">Respuesta</span>
+            <p class="card-answer"></p>
+          </div>
+        </div>
+      </article>
+    </template>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
