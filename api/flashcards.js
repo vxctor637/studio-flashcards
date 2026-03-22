@@ -1,5 +1,8 @@
-const OPENAI_API_URL = "https://api.openai.com/v1/responses";
-const OPENAI_MODEL = "gpt-5-mini";
+const GEMINI_MODEL = "gemini-2.5-flash";
+
+function getApiKey() {
+  return process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || "";
+}
 
 function buildPrompt({ subject, topic, notes, cardTotal, difficulty }) {
   const topicLine = topic ? `Tema: ${topic}` : "Tema: no especificado";
@@ -12,6 +15,7 @@ function buildPrompt({ subject, topic, notes, cardTotal, difficulty }) {
     "Genera tarjetas claras, correctas y utiles para memorizacion activa.",
     "Las preguntas deben ser concretas y las respuestas breves, pero completas.",
     "Responde siempre en espanol.",
+    "Devuelve un JSON valido que siga exactamente el esquema solicitado.",
     `Materia: ${subject}`,
     topicLine,
     `Nivel solicitado: ${difficulty}`,
@@ -36,8 +40,10 @@ module.exports = async function handler(req, res) {
     return;
   }
 
-  if (!process.env.OPENAI_API_KEY) {
-    res.status(500).json({ error: "Falta configurar OPENAI_API_KEY." });
+  const apiKey = getApiKey();
+
+  if (!apiKey) {
+    res.status(500).json({ error: "Falta configurar GEMINI_API_KEY." });
     return;
   }
 
@@ -51,27 +57,34 @@ module.exports = async function handler(req, res) {
   const safeCardTotal = Math.min(Math.max(Number(cardTotal) || 8, 3), 12);
 
   try {
-    const apiResponse = await fetch(OPENAI_API_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: OPENAI_MODEL,
-        input: buildPrompt({
-          subject,
-          topic,
-          notes,
-          cardTotal: safeCardTotal,
-          difficulty
-        }),
-        text: {
-          format: {
-            type: "json_schema",
-            name: "flashcards",
-            strict: true,
-            schema: {
+    const apiResponse = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-goog-api-key": apiKey
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                {
+                  text: buildPrompt({
+                    subject,
+                    topic,
+                    notes,
+                    cardTotal: safeCardTotal,
+                    difficulty
+                  })
+                }
+              ]
+            }
+          ],
+          generationConfig: {
+            temperature: 0.4,
+            responseMimeType: "application/json",
+            responseJsonSchema: {
               type: "object",
               properties: {
                 cards: {
@@ -93,32 +106,37 @@ module.exports = async function handler(req, res) {
               additionalProperties: false
             }
           }
-        }
-      })
-    });
+        })
+      }
+    );
 
     if (!apiResponse.ok) {
-      const errorText = await apiResponse.text();
-      res.status(apiResponse.status).json({ error: errorText || "Error al consultar OpenAI." });
+      const errorPayload = await apiResponse.json().catch(() => null);
+      const errorMessage =
+        errorPayload?.error?.message ||
+        errorPayload?.error?.status ||
+        "Error al consultar Gemini.";
+
+      res.status(apiResponse.status).json({ error: errorMessage });
       return;
     }
 
     const data = await apiResponse.json();
     const contentText =
-      data.output?.[0]?.content?.find((item) => item.type === "output_text")?.text ||
-      data.output_text ||
+      data.candidates?.[0]?.content?.parts?.find((part) => typeof part.text === "string")?.text ||
       "";
+
     const parsed = JSON.parse(contentText);
     const cards = validateCards(parsed.cards || []);
 
     if (cards.length === 0) {
-      res.status(502).json({ error: "OpenAI no devolvio tarjetas validas." });
+      res.status(502).json({ error: "Gemini no devolvio tarjetas validas." });
       return;
     }
 
     res.status(200).json({
       cards,
-      model: OPENAI_MODEL
+      model: GEMINI_MODEL
     });
   } catch (error) {
     res.status(500).json({

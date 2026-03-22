@@ -221,7 +221,7 @@ form.addEventListener("submit", async (event) => {
   updateUiState({
     mode: "Intentando IA",
     state: "Procesando",
-    message: "La app esta intentando generar tarjetas con OpenAI.",
+    message: "La app esta intentando generar tarjetas con Gemini.",
     loading: true
   });
 
@@ -240,7 +240,7 @@ form.addEventListener("submit", async (event) => {
     updateUiState({
       mode: "IA activa",
       state: "Completado",
-      message: "Las tarjetas fueron creadas con IA y ya estan listas para estudiar."
+      message: `Las tarjetas fueron creadas con IA y ya estan listas para estudiar. Modelo: ${result.model || "Gemini"}.`
     });
   } catch (error) {
     currentCards = buildFallbackCards(subject, topic, notes, cardTotal);
