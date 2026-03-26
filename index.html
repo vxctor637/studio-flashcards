@@ -67,8 +67,8 @@
             <p>Convierte ideas, resumenes y PDFs en preguntas listas para practicar.</p>
           </article>
 
-          <article class="tool-card">
-            <span class="tool-state tool-state-soon">Proximamente</span>
+          <article class="tool-card tool-card-active">
+            <span class="tool-state">Disponible</span>
             <h3>Resumenes</h3>
             <p>Genera versiones cortas y ordenadas de tus apuntes para repasar mas rapido.</p>
           </article>
@@ -171,6 +171,85 @@
           <span>Estado</span>
           <strong id="generation-status">Esperando datos</strong>
         </div>
+      </section>
+
+      <section class="panel form-panel" id="summaries-workspace">
+        <div class="section-heading">
+          <p class="eyebrow">Workspace</p>
+          <h2>Generador de resumenes con IA</h2>
+        </div>
+
+        <form id="summary-form">
+          <label for="summary-subject">Materia</label>
+          <input
+            id="summary-subject"
+            name="summarySubject"
+            type="text"
+            placeholder="Ej: Historia, Quimica, Lenguaje"
+            required
+          />
+
+          <label for="summary-topic">Tema</label>
+          <input
+            id="summary-topic"
+            name="summaryTopic"
+            type="text"
+            placeholder="Ej: Independencia de Chile, Enlaces quimicos"
+            required
+          />
+
+          <div class="concepts-header">
+            <label for="key-concept-1">Conceptos clave</label>
+            <button type="button" id="add-concept" class="icon-button">+</button>
+          </div>
+
+          <div id="key-concepts-list" class="concepts-list">
+            <div class="concept-row">
+              <input
+                id="key-concept-1"
+                name="keyConcept"
+                type="text"
+                placeholder="Ej: Causas, consecuencias, personajes"
+              />
+            </div>
+          </div>
+
+          <label for="summary-notes">Apuntes del estudiante</label>
+          <textarea
+            id="summary-notes"
+            name="summaryNotes"
+            rows="8"
+            placeholder="Pega aqui tus apuntes, definiciones, datos importantes o ideas desordenadas para que la IA construya un resumen completo."
+            required
+          ></textarea>
+
+          <div class="actions">
+            <button type="submit" id="generate-summary-button">Generar resumen</button>
+            <button type="button" id="load-summary-demo" class="secondary">Cargar ejemplo</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="panel summary-output-panel">
+        <div class="results-header">
+          <div>
+            <p class="eyebrow">Resumen IA</p>
+            <h2>Resumen listo para repasar</h2>
+          </div>
+        </div>
+
+        <p id="summary-status-message" class="status-message">
+          Completa la materia, el tema y tus apuntes para generar un resumen con IA.
+        </p>
+
+        <div id="summary-empty-state" class="empty-state">
+          Aqui aparecera un resumen claro, ordenado y completo en base a la informacion del estudiante.
+        </div>
+
+        <article id="summary-result" class="summary-result" hidden>
+          <h3 id="summary-result-title" class="summary-result-title"></h3>
+          <div id="summary-result-content" class="summary-result-content"></div>
+        </article>
       </section>
 
       <section class="panel results-panel">

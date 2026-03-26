@@ -1,4 +1,5 @@
 const form = document.querySelector("#flashcard-form");
+const summaryForm = document.querySelector("#summary-form");
 const subjectInput = document.querySelector("#subject");
 const topicInput = document.querySelector("#topic");
 const notesInput = document.querySelector("#notes");
@@ -6,6 +7,13 @@ const pdfFileInput = document.querySelector("#pdf-file");
 const pdfStatus = document.querySelector("#pdf-status");
 const cardTotalInput = document.querySelector("#card-total");
 const difficultyInput = document.querySelector("#difficulty");
+const summarySubjectInput = document.querySelector("#summary-subject");
+const summaryTopicInput = document.querySelector("#summary-topic");
+const summaryNotesInput = document.querySelector("#summary-notes");
+const keyConceptsList = document.querySelector("#key-concepts-list");
+const addConceptButton = document.querySelector("#add-concept");
+const generateSummaryButton = document.querySelector("#generate-summary-button");
+const loadSummaryDemoButton = document.querySelector("#load-summary-demo");
 const cardsGrid = document.querySelector("#cards-grid");
 const emptyState = document.querySelector("#empty-state");
 const cardCount = document.querySelector("#card-count");
@@ -15,6 +23,11 @@ const statusMessage = document.querySelector("#status-message");
 const shuffleButton = document.querySelector("#shuffle-cards");
 const loadDemoButton = document.querySelector("#load-demo");
 const generateButton = document.querySelector("#generate-button");
+const summaryStatusMessage = document.querySelector("#summary-status-message");
+const summaryEmptyState = document.querySelector("#summary-empty-state");
+const summaryResult = document.querySelector("#summary-result");
+const summaryResultTitle = document.querySelector("#summary-result-title");
+const summaryResultContent = document.querySelector("#summary-result-content");
 const template = document.querySelector("#card-template");
 
 const subjectSuggestions = {
@@ -55,6 +68,7 @@ const starterQuestions = [
 
 let currentCards = [];
 let isPdfProcessing = false;
+let conceptCount = 1;
 
 const PDF_TEXT_LIMIT = 18000;
 
@@ -141,6 +155,12 @@ function updateUiState({ mode, state, message, loading = false }) {
   statusMessage.textContent = message;
   generateButton.disabled = loading;
   generateButton.textContent = loading ? "Generando..." : "Generar con IA";
+}
+
+function updateSummaryUiState({ message, loading = false }) {
+  summaryStatusMessage.textContent = message;
+  generateSummaryButton.disabled = loading;
+  generateSummaryButton.textContent = loading ? "Generando..." : "Generar resumen";
 }
 
 function renderCards(cards) {
@@ -256,6 +276,90 @@ async function requestAiCards(payload) {
   }
 
   return response.json();
+}
+
+async function requestAiSummary(payload) {
+  const response = await fetch("/api/summary", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(payload)
+  });
+
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data.error || "No fue posible generar el resumen con IA.");
+  }
+
+  return response.json();
+}
+
+function addConceptInput(value = "") {
+  conceptCount += 1;
+  const conceptRow = document.createElement("div");
+  conceptRow.className = "concept-row";
+
+  const input = document.createElement("input");
+  input.id = `key-concept-${conceptCount}`;
+  input.name = "keyConcept";
+  input.type = "text";
+  input.placeholder = "Ej: Definiciones, fechas, procesos";
+  input.value = value;
+
+  conceptRow.appendChild(input);
+  keyConceptsList.appendChild(conceptRow);
+}
+
+function getKeyConcepts() {
+  return Array.from(keyConceptsList.querySelectorAll('input[name="keyConcept"]'))
+    .map((input) => input.value.trim())
+    .filter(Boolean);
+}
+
+function renderSummary(result) {
+  summaryResultTitle.textContent = result.title || "Resumen generado";
+  summaryResultContent.innerHTML = "";
+
+  const paragraphs = Array.isArray(result.paragraphs) ? result.paragraphs : [];
+  const bullets = Array.isArray(result.keyPoints) ? result.keyPoints : [];
+
+  paragraphs.forEach((paragraph) => {
+    const paragraphNode = document.createElement("p");
+    paragraphNode.textContent = paragraph;
+    summaryResultContent.appendChild(paragraphNode);
+  });
+
+  if (bullets.length > 0) {
+    const bulletList = document.createElement("ul");
+
+    bullets.forEach((point) => {
+      const item = document.createElement("li");
+      item.textContent = point;
+      bulletList.appendChild(item);
+    });
+
+    summaryResultContent.appendChild(bulletList);
+  }
+
+  summaryEmptyState.hidden = true;
+  summaryResult.hidden = false;
+}
+
+function buildLocalSummary({ subject, topic, keyConcepts, notes }) {
+  const noteIdeas = splitNotesIntoIdeas(notes).slice(0, 6);
+  const title = `${topic || "Tema principal"} en ${subject}`;
+  const intro = `Este resumen aborda ${topic || "el tema principal"} dentro de ${subject}, organizando la informacion mas importante en un formato claro para estudio.`;
+  const conceptsLine = keyConcepts.length
+    ? `Conceptos clave a reforzar: ${keyConcepts.join(", ")}.`
+    : `El estudiante no marco conceptos clave especificos, por lo que el resumen prioriza las ideas centrales detectadas en los apuntes.`;
+  const closing = `Para estudiar mejor este contenido, conviene relacionar definiciones, ejemplos y conexiones entre las ideas principales.`;
+
+  return {
+    title,
+    paragraphs: [intro, conceptsLine, ...noteIdeas.slice(0, 3), closing],
+    keyPoints: noteIdeas.slice(3, 6)
+  };
 }
 
 async function handlePdfSelection(file) {
@@ -382,4 +486,77 @@ La celula animal y la vegetal comparten organelos, pero la vegetal tiene pared c
   cardTotalInput.value = "8";
   difficultyInput.value = "intermedio";
   form.requestSubmit();
+});
+
+addConceptButton.addEventListener("click", () => {
+  addConceptInput();
+});
+
+summaryForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  const subject = summarySubjectInput.value.trim();
+  const topic = summaryTopicInput.value.trim();
+  const notes = summaryNotesInput.value.trim();
+  const keyConcepts = getKeyConcepts();
+
+  if (!subject) {
+    summarySubjectInput.focus();
+    return;
+  }
+
+  if (!topic) {
+    summaryTopicInput.focus();
+    return;
+  }
+
+  if (!notes) {
+    summaryNotesInput.focus();
+    return;
+  }
+
+  updateSummaryUiState({
+    message: "La app esta construyendo un resumen completo con IA.",
+    loading: true
+  });
+
+  try {
+    const result = await requestAiSummary({
+      subject,
+      topic,
+      keyConcepts,
+      notes
+    });
+
+    renderSummary(result);
+    updateSummaryUiState({
+      message: `El resumen fue generado con IA y ya esta listo para estudiar. Modelo: ${result.model || "Gemini"}.`
+    });
+  } catch (error) {
+    renderSummary(buildLocalSummary({ subject, topic, keyConcepts, notes }));
+    updateSummaryUiState({
+      message: `La IA no respondio correctamente. Se genero un resumen local. Detalle: ${error instanceof Error ? error.message : "Error desconocido."}`
+    });
+  }
+});
+
+loadSummaryDemoButton.addEventListener("click", () => {
+  summarySubjectInput.value = "Historia";
+  summaryTopicInput.value = "Independencia de Chile";
+
+  const conceptInputs = keyConceptsList.querySelectorAll('input[name="keyConcept"]');
+  conceptInputs.forEach((input, index) => {
+    input.value = index === 0 ? "Patria Vieja" : "";
+  });
+
+  if (conceptInputs.length === 1) {
+    addConceptInput("Reconquista");
+    addConceptInput("Patria Nueva");
+  }
+
+  summaryNotesInput.value = `La Independencia de Chile fue un proceso politico y militar que se desarrollo a comienzos del siglo XIX.
+La Patria Vieja inicio con la Primera Junta Nacional de Gobierno en 1810.
+Luego ocurrio la Reconquista espanola, periodo en que los realistas recuperaron el control.
+Mas tarde comenzo la Patria Nueva, liderada por figuras como Bernardo O'Higgins y Jose de San Martin.
+La independencia se consolido con victorias militares y con la organizacion de un nuevo Estado.`;
 });
