@@ -275,37 +275,75 @@ function buildFallbackCards(subject, topic, notes, total) {
 }
 
 async function requestAiCards(payload) {
-  const response = await fetch("/api/flashcards", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(payload)
-  });
+  try {
+    const response = await fetch("/api/flashcards", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
+    });
 
-  if (!response.ok) {
-    const data = await response.json().catch(() => ({}));
-    throw new Error(data.error || "No fue posible generar tarjetas con IA.");
+    if (!response.ok) {
+      const data = await response.json().catch(() => null);
+      const statusHint =
+        response.status === 404
+          ? "La ruta /api/flashcards no existe en este entorno. Abre la app desde Vercel o desde un servidor con backend."
+          : "";
+
+      throw new Error(
+        data?.error ||
+          statusHint ||
+          `No fue posible generar tarjetas con IA. Codigo HTTP: ${response.status}.`
+      );
+    }
+
+    return response.json();
+  } catch (error) {
+    if (error instanceof TypeError) {
+      throw new Error(
+        "No se pudo conectar con el backend de IA. Si abriste la app localmente sin Vercel o sin servidor API, la IA no puede responder."
+      );
+    }
+
+    throw error;
   }
-
-  return response.json();
 }
 
 async function requestAiSummary(payload) {
-  const response = await fetch("/api/summary", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(payload)
-  });
+  try {
+    const response = await fetch("/api/summary", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
+    });
 
-  if (!response.ok) {
-    const data = await response.json().catch(() => ({}));
-    throw new Error(data.error || "No fue posible generar el resumen con IA.");
+    if (!response.ok) {
+      const data = await response.json().catch(() => null);
+      const statusHint =
+        response.status === 404
+          ? "La ruta /api/summary no existe en este entorno. Abre la app desde Vercel o desde un servidor con backend."
+          : "";
+
+      throw new Error(
+        data?.error ||
+          statusHint ||
+          `No fue posible generar el resumen con IA. Codigo HTTP: ${response.status}.`
+      );
+    }
+
+    return response.json();
+  } catch (error) {
+    if (error instanceof TypeError) {
+      throw new Error(
+        "No se pudo conectar con el backend de IA. Si abriste la app localmente sin Vercel o sin servidor API, la IA no puede responder."
+      );
+    }
+
+    throw error;
   }
-
-  return response.json();
 }
 
 function addConceptInput(value = "") {
