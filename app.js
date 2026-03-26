@@ -312,19 +312,22 @@ async function requestAiCards(payload) {
 
 async function requestAiSummary(payload) {
   try {
-    const response = await fetch("/api/summary", {
+    const response = await fetch("/api/flashcards", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
       },
-      body: JSON.stringify(payload)
+      body: JSON.stringify({
+        ...payload,
+        tool: "summary"
+      })
     });
 
     if (!response.ok) {
       const data = await response.json().catch(() => null);
       const statusHint =
         response.status === 404
-          ? "La ruta /api/summary no existe en este entorno. Abre la app desde Vercel o desde un servidor con backend."
+          ? "La ruta de backend no existe en este entorno. Abre la app desde Vercel o desde un servidor con backend."
           : "";
 
       throw new Error(
