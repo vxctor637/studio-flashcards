@@ -50,17 +50,25 @@ function buildNotesPrompt({ subject, topic, notes, keyConcepts }) {
 
 function validateNotes(payload) {
   const title = typeof payload?.title === "string" ? payload.title.trim() : "";
-  const paragraphs = Array.isArray(payload?.paragraphs)
-    ? payload.paragraphs.filter((item) => typeof item === "string").map((item) => item.trim()).filter(Boolean)
+  const introduction = Array.isArray(payload?.introduction)
+    ? payload.introduction.filter((item) => typeof item === "string").map((item) => item.trim()).filter(Boolean)
     : [];
-  const keyPoints = Array.isArray(payload?.keyPoints)
-    ? payload.keyPoints.filter((item) => typeof item === "string").map((item) => item.trim()).filter(Boolean)
+  const concepts = Array.isArray(payload?.concepts)
+    ? payload.concepts.filter((item) => typeof item === "string").map((item) => item.trim()).filter(Boolean)
+    : [];
+  const development = Array.isArray(payload?.development)
+    ? payload.development.filter((item) => typeof item === "string").map((item) => item.trim()).filter(Boolean)
+    : [];
+  const review = Array.isArray(payload?.review)
+    ? payload.review.filter((item) => typeof item === "string").map((item) => item.trim()).filter(Boolean)
     : [];
 
   return {
     title,
-    paragraphs,
-    keyPoints
+    introduction,
+    concepts,
+    development,
+    review
   };
 }
 
@@ -72,9 +80,10 @@ function countWords(text) {
 }
 
 function getNoteWordCount(notes) {
-  const paragraphWords = (notes.paragraphs || []).reduce((total, paragraph) => total + countWords(paragraph), 0);
-  const keyPointWords = (notes.keyPoints || []).reduce((total, point) => total + countWords(point), 0);
-  return paragraphWords + keyPointWords;
+  return ["introduction", "concepts", "development", "review"].reduce(
+    (total, key) => total + (notes[key] || []).reduce((sum, item) => sum + countWords(item), 0),
+    0
+  );
 }
 
 async function requestGemini({ apiKey, prompt }) {
@@ -101,20 +110,32 @@ async function requestGemini({ apiKey, prompt }) {
           type: "object",
           properties: {
             title: { type: "string" },
-            paragraphs: {
+            introduction: {
               type: "array",
-              minItems: 6,
-              maxItems: 12,
+              minItems: 2,
+              maxItems: 4,
               items: { type: "string" }
             },
-            keyPoints: {
+            concepts: {
               type: "array",
-              minItems: 5,
-              maxItems: 10,
+              minItems: 4,
+              maxItems: 8,
+              items: { type: "string" }
+            },
+            development: {
+              type: "array",
+              minItems: 4,
+              maxItems: 8,
+              items: { type: "string" }
+            },
+            review: {
+              type: "array",
+              minItems: 4,
+              maxItems: 8,
               items: { type: "string" }
             }
           },
-          required: ["title", "paragraphs", "keyPoints"],
+          required: ["title", "introduction", "concepts", "development", "review"],
           additionalProperties: false
         }
       }
@@ -171,7 +192,7 @@ async function handleNotes({ req, res, apiKey }) {
   let studyNotes = validateNotes(parsed);
   let wordCount = getNoteWordCount(studyNotes);
 
-  if (studyNotes.title && studyNotes.paragraphs.length > 0 && wordCount < MIN_STUDY_NOTE_WORDS) {
+  if (studyNotes.title && studyNotes.development.length > 0 && wordCount < MIN_STUDY_NOTE_WORDS) {
     const retryPrompt = [
       basePrompt,
       "",
@@ -204,7 +225,7 @@ async function handleNotes({ req, res, apiKey }) {
     wordCount = getNoteWordCount(studyNotes);
   }
 
-  if (!studyNotes.title || studyNotes.paragraphs.length === 0 || wordCount < MIN_STUDY_NOTE_WORDS) {
+  if (!studyNotes.title || studyNotes.development.length === 0 || wordCount < MIN_STUDY_NOTE_WORDS) {
     res.status(502).json({
       error: `Gemini no devolvio apuntes suficientemente completos. Minimo esperado: ${MIN_STUDY_NOTE_WORDS} palabras.`
     });

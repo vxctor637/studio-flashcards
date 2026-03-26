@@ -17,6 +17,8 @@ const keyConceptsList = document.querySelector("#key-concepts-list");
 const addConceptButton = document.querySelector("#add-concept");
 const generateSummaryButton = document.querySelector("#generate-summary-button");
 const loadSummaryDemoButton = document.querySelector("#load-summary-demo");
+const notesProgress = document.querySelector("#notes-progress");
+const notesProgressBar = document.querySelector("#notes-progress-bar");
 const cardsGrid = document.querySelector("#cards-grid");
 const emptyState = document.querySelector("#empty-state");
 const cardCount = document.querySelector("#card-count");
@@ -72,6 +74,7 @@ const starterQuestions = [
 let currentCards = [];
 let isPdfProcessing = false;
 let conceptCount = 1;
+let notesProgressInterval = null;
 
 const PDF_TEXT_LIMIT = 18000;
 const MIN_STUDY_NOTE_WORDS = 500;
@@ -175,6 +178,38 @@ function updateSummaryUiState({ message, loading = false }) {
   summaryStatusMessage.textContent = message;
   generateSummaryButton.disabled = loading;
   generateSummaryButton.textContent = loading ? "Generando..." : "Generar apuntes";
+}
+
+function setNotesProgress(value) {
+  notesProgressBar.style.width = `${Math.max(0, Math.min(100, value))}%`;
+}
+
+function startNotesProgress() {
+  if (notesProgressInterval) {
+    clearInterval(notesProgressInterval);
+  }
+
+  notesProgress.hidden = false;
+  setNotesProgress(8);
+
+  let currentProgress = 8;
+  notesProgressInterval = setInterval(() => {
+    currentProgress = Math.min(currentProgress + Math.random() * 10, 90);
+    setNotesProgress(currentProgress);
+  }, 280);
+}
+
+function finishNotesProgress() {
+  if (notesProgressInterval) {
+    clearInterval(notesProgressInterval);
+    notesProgressInterval = null;
+  }
+
+  setNotesProgress(100);
+  setTimeout(() => {
+    notesProgress.hidden = true;
+    setNotesProgress(0);
+  }, 500);
 }
 
 function renderCards(cards) {
@@ -375,27 +410,34 @@ function getKeyConcepts() {
 function renderSummary(result) {
   summaryResultTitle.textContent = result.title || "Apuntes generados";
   summaryResultContent.innerHTML = "";
+  const sections = Array.isArray(result.sections) ? result.sections : [];
 
-  const paragraphs = Array.isArray(result.paragraphs) ? result.paragraphs : [];
-  const bullets = Array.isArray(result.keyPoints) ? result.keyPoints : [];
+  sections.forEach((section) => {
+    const sectionNode = document.createElement("section");
+    sectionNode.className = "summary-section";
 
-  paragraphs.forEach((paragraph) => {
-    const paragraphNode = document.createElement("p");
-    paragraphNode.textContent = paragraph;
-    summaryResultContent.appendChild(paragraphNode);
+    const headingNode = document.createElement("h4");
+    headingNode.textContent = section.heading;
+    sectionNode.appendChild(headingNode);
+
+    if (section.type === "list") {
+      const listNode = document.createElement("ul");
+      (section.items || []).forEach((item) => {
+        const itemNode = document.createElement("li");
+        itemNode.textContent = item;
+        listNode.appendChild(itemNode);
+      });
+      sectionNode.appendChild(listNode);
+    } else {
+      (section.items || []).forEach((item) => {
+        const paragraphNode = document.createElement("p");
+        paragraphNode.textContent = item;
+        sectionNode.appendChild(paragraphNode);
+      });
+    }
+
+    summaryResultContent.appendChild(sectionNode);
   });
-
-  if (bullets.length > 0) {
-    const bulletList = document.createElement("ul");
-
-    bullets.forEach((point) => {
-      const item = document.createElement("li");
-      item.textContent = point;
-      bulletList.appendChild(item);
-    });
-
-    summaryResultContent.appendChild(bulletList);
-  }
 
   summaryEmptyState.hidden = true;
   summaryResult.hidden = false;
@@ -409,44 +451,38 @@ function countWords(text) {
 }
 
 function getStudyNoteWordCount(result) {
-  const paragraphWords = (result.paragraphs || []).reduce(
-    (total, paragraph) => total + countWords(paragraph),
+  return (result.sections || []).reduce(
+    (total, section) => total + (section.items || []).reduce((sum, item) => sum + countWords(item), 0),
     0
   );
-  const keyPointWords = (result.keyPoints || []).reduce(
-    (total, point) => total + countWords(point),
-    0
-  );
-
-  return paragraphWords + keyPointWords;
 }
 
 function normalizeSummaryResponse(result, requestData) {
-  if (result && typeof result.title === "string" && Array.isArray(result.paragraphs)) {
+  if (result && typeof result.title === "string" && result.introduction && result.development) {
     const normalized = {
       title: result.title.trim() || `Apuntes de ${requestData.topic}`,
-      paragraphs: result.paragraphs.filter(Boolean),
-      keyPoints: Array.isArray(result.keyPoints) ? result.keyPoints.filter(Boolean) : [],
-      model: result.model
-    };
-
-    if (getStudyNoteWordCount(normalized) < MIN_STUDY_NOTE_WORDS) {
-      throw new Error(
-        `La IA devolvio apuntes demasiado cortos. Minimo esperado: ${MIN_STUDY_NOTE_WORDS} palabras.`
-      );
-    }
-
-    return normalized;
-  }
-
-  if (result && typeof result.summary === "string" && result.summary.trim()) {
-    const normalized = {
-      title: `${requestData.topic} en ${requestData.subject}`,
-      paragraphs: result.summary
-        .split(/\n{2,}/)
-        .map((item) => item.trim())
-        .filter(Boolean),
-      keyPoints: Array.isArray(result.keyPoints) ? result.keyPoints.filter(Boolean) : [],
+      sections: [
+        {
+          heading: "Introduccion",
+          type: "text",
+          items: Array.isArray(result.introduction) ? result.introduction.filter(Boolean) : []
+        },
+        {
+          heading: "Conceptos",
+          type: "list",
+          items: Array.isArray(result.concepts) ? result.concepts.filter(Boolean) : []
+        },
+        {
+          heading: "Desarrollo",
+          type: "text",
+          items: Array.isArray(result.development) ? result.development.filter(Boolean) : []
+        },
+        {
+          heading: "Repaso",
+          type: "list",
+          items: Array.isArray(result.review) ? result.review.filter(Boolean) : []
+        }
+      ].filter((section) => section.items.length > 0),
       model: result.model
     };
 
@@ -473,8 +509,28 @@ function buildLocalSummary({ subject, topic, keyConcepts, notes }) {
 
   return {
     title,
-    paragraphs: [intro, conceptsLine, ...noteIdeas.slice(0, 3), closing],
-    keyPoints: noteIdeas.slice(3, 6)
+    sections: [
+      {
+        heading: "Introduccion",
+        type: "text",
+        items: [intro]
+      },
+      {
+        heading: "Conceptos",
+        type: "list",
+        items: keyConcepts.length ? keyConcepts : [conceptsLine]
+      },
+      {
+        heading: "Desarrollo",
+        type: "text",
+        items: noteIdeas.slice(0, 3)
+      },
+      {
+        heading: "Repaso",
+        type: "list",
+        items: [closing, ...noteIdeas.slice(3, 6)]
+      }
+    ]
   };
 }
 
@@ -652,6 +708,7 @@ summaryForm.addEventListener("submit", async (event) => {
     message: "La app esta construyendo apuntes completos con IA.",
     loading: true
   });
+  startNotesProgress();
 
   try {
     const result = await requestAiSummary(requestData);
@@ -666,6 +723,8 @@ summaryForm.addEventListener("submit", async (event) => {
     updateSummaryUiState({
       message: `La IA no respondio correctamente. Se generaron apuntes locales. Detalle: ${error instanceof Error ? error.message : "Error desconocido."}`
     });
+  } finally {
+    finishNotesProgress();
   }
 });
 

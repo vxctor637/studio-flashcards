@@ -385,6 +385,12 @@ body::before {
   align-items: center;
 }
 
+.module-home-button {
+  position: sticky;
+  top: 20px;
+  z-index: 5;
+}
+
 .module-copy {
   margin: 14px 0 0;
   color: var(--muted);
@@ -516,6 +522,24 @@ textarea {
   grid-column: 1 / -1;
 }
 
+.notes-progress {
+  margin-top: 18px;
+  width: 100%;
+  height: 12px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(47, 109, 246, 0.12);
+  border: 1px solid rgba(47, 109, 246, 0.14);
+}
+
+.notes-progress-bar {
+  width: 0%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--accent), var(--primary));
+  transition: width 220ms ease;
+}
+
 .summary-result {
   margin-top: 22px;
   padding: 26px;
@@ -534,17 +558,35 @@ textarea {
 
 .summary-result-content {
   display: grid;
-  gap: 14px;
+  gap: 18px;
   color: var(--text);
   line-height: 1.7;
 }
 
-.summary-result-content p,
-.summary-result-content ul {
+.summary-section {
+  display: grid;
+  gap: 10px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(102, 117, 143, 0.12);
+}
+
+.summary-section:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.summary-section h4 {
+  margin: 0;
+  font-size: 1rem;
+  letter-spacing: 0.02em;
+}
+
+.summary-section p,
+.summary-section ul {
   margin: 0;
 }
 
-.summary-result-content ul {
+.summary-section ul {
   padding-left: 20px;
 }
 
