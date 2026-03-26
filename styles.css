@@ -377,6 +377,7 @@ body::before {
 
 .module-header {
   grid-column: 1 / -1;
+  z-index: 20;
 }
 
 .module-header-row {
