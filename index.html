@@ -3,21 +3,90 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>FlashCards de Estudio</title>
+    <title>Campus IA | Estudia con tarjetas inteligentes</title>
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
     <main class="app-shell">
       <section class="hero">
-        <p class="eyebrow">Estudio Inteligente</p>
-        <h1>Crea tarjetas de estudio con IA</h1>
-        <p class="hero-copy">
-        Estudia de forma más inteligente con tarjetas claras, precisas y adaptadas a cada tema,
-          para comprender mejor, memorizar más rápido y llegar mejor preparado/a a tus evaluaciones.
-        </p>
+        <div class="topbar">
+          <div>
+            <p class="eyebrow">Campus IA</p>
+            <p class="brand-copy">Tu espacio para estudiar mejor cada semana.</p>
+          </div>
+          <div class="topbar-badge">Beta para estudiantes</div>
+        </div>
+
+        <div class="hero-grid">
+          <div class="hero-content">
+            <span class="hero-pill">Plataforma de estudio inteligente</span>
+            <h1>Una app para estudiar con IA, empezando por tus tarjetas</h1>
+            <p class="hero-copy">
+              Organiza tus apuntes, transforma PDFs en material util y estudia con una interfaz clara,
+              entretenida y profesional. La primera herramienta activa es tarjetas de estudio.
+            </p>
+
+            <div class="hero-actions">
+              <a class="hero-link primary-link" href="#flashcards-workspace">Crear tarjetas</a>
+              <a class="hero-link secondary-link" href="#study-tools">Ver herramientas</a>
+            </div>
+          </div>
+
+          <aside class="hero-preview">
+            <p class="preview-label">Panel de hoy</p>
+            <div class="preview-card">
+              <span class="preview-tag">Activo ahora</span>
+              <strong>Tarjetas de estudio</strong>
+              <p>Genera preguntas y respuestas desde tus apuntes, texto pegado o archivos PDF.</p>
+            </div>
+
+            <div class="preview-metrics">
+              <div>
+                <span>Modo</span>
+                <strong>IA + PDF</strong>
+              </div>
+              <div>
+                <span>Objetivo</span>
+                <strong>Memoria activa</strong>
+              </div>
+            </div>
+          </aside>
+        </div>
       </section>
 
-      <section class="panel form-panel">
+      <section class="tools-panel" id="study-tools">
+        <div class="section-heading">
+          <p class="eyebrow">Herramientas</p>
+          <h2>Tu app de estudio crecera desde aqui</h2>
+        </div>
+
+        <div class="tools-grid">
+          <article class="tool-card tool-card-active">
+            <span class="tool-state">Disponible</span>
+            <h3>Tarjetas de estudio</h3>
+            <p>Convierte ideas, resumenes y PDFs en preguntas listas para practicar.</p>
+          </article>
+
+          <article class="tool-card">
+            <span class="tool-state tool-state-soon">Proximamente</span>
+            <h3>Resumenes</h3>
+            <p>Genera versiones cortas y ordenadas de tus apuntes para repasar mas rapido.</p>
+          </article>
+
+          <article class="tool-card">
+            <span class="tool-state tool-state-soon">Proximamente</span>
+            <h3>Quiz interactivo</h3>
+            <p>Practica con preguntas automaticas y detecta que temas necesitan mas refuerzo.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="panel form-panel" id="flashcards-workspace">
+        <div class="section-heading">
+          <p class="eyebrow">Workspace</p>
+          <h2>Creador de tarjetas con IA</h2>
+        </div>
+
         <form id="flashcard-form">
           <label for="subject">Materia</label>
           <input
@@ -79,14 +148,17 @@
 
           <div class="actions">
             <button type="submit" id="generate-button">Generar con IA</button>
-            <button type="button" id="load-demo" class="secondary">
-              Cargar ejemplo
-            </button>
+            <button type="button" id="load-demo" class="secondary">Cargar ejemplo</button>
           </div>
         </form>
       </section>
 
       <section class="panel summary-panel">
+        <div class="section-heading compact-heading">
+          <p class="eyebrow">Sesion</p>
+          <h2>Estado de estudio</h2>
+        </div>
+
         <div class="summary-row">
           <span>Tarjetas generadas</span>
           <strong id="card-count">0</strong>
@@ -107,9 +179,7 @@
             <p class="eyebrow">Tus Tarjetas</p>
             <h2>Lista para practicar</h2>
           </div>
-          <button type="button" id="shuffle-cards" class="secondary">
-            Mezclar
-          </button>
+          <button type="button" id="shuffle-cards" class="secondary">Mezclar</button>
         </div>
 
         <p id="status-message" class="status-message">
@@ -117,8 +187,8 @@
         </p>
 
         <div id="empty-state" class="empty-state">
-          Cuando actives la version con Gemini, esta seccion recibira tarjetas
-          generadas automaticamente por IA.
+          Cuando actives la version con Gemini, esta seccion recibira tarjetas generadas
+          automaticamente por IA.
         </div>
 
         <div id="cards-grid" class="cards-grid" aria-live="polite"></div>
