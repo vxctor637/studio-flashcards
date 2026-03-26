@@ -44,6 +44,19 @@
             placeholder="Pega aqui definiciones, conceptos, fechas, formulas o ideas clave para que la IA cree mejores tarjetas."
           ></textarea>
 
+          <div class="upload-block">
+            <div class="upload-copy">
+              <label for="pdf-file">PDF de apuntes</label>
+              <p>
+                Sube un PDF con texto para extraer su contenido y usarlo como base para las tarjetas.
+              </p>
+            </div>
+            <input id="pdf-file" name="pdfFile" type="file" accept="application/pdf" />
+            <p id="pdf-status" class="upload-status">
+              Puedes pegar apuntes, subir un PDF o combinar ambas opciones.
+            </p>
+          </div>
+
           <div class="form-grid">
             <div>
               <label for="card-total">Cantidad de tarjetas</label>
@@ -127,6 +140,7 @@
       </article>
     </template>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="./app.js"></script>
   </body>
 </html>

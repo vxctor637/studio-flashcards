@@ -2,6 +2,8 @@ const form = document.querySelector("#flashcard-form");
 const subjectInput = document.querySelector("#subject");
 const topicInput = document.querySelector("#topic");
 const notesInput = document.querySelector("#notes");
+const pdfFileInput = document.querySelector("#pdf-file");
+const pdfStatus = document.querySelector("#pdf-status");
 const cardTotalInput = document.querySelector("#card-total");
 const difficultyInput = document.querySelector("#difficulty");
 const cardsGrid = document.querySelector("#cards-grid");
@@ -52,6 +54,14 @@ const starterQuestions = [
 ];
 
 let currentCards = [];
+let isPdfProcessing = false;
+
+const PDF_TEXT_LIMIT = 18000;
+
+if (window.pdfjsLib) {
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+    "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+}
 
 function normalizeText(text) {
   return text
@@ -74,6 +84,55 @@ function shortenText(text, maxLength) {
   }
 
   return `${text.slice(0, maxLength - 3)}...`;
+}
+
+function updatePdfStatus(message, isError = false) {
+  pdfStatus.textContent = message;
+  pdfStatus.style.color = isError ? "#8f2d1d" : "";
+}
+
+function trimPdfText(text) {
+  const normalized = text.replace(/\s+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+
+  if (normalized.length <= PDF_TEXT_LIMIT) {
+    return {
+      text: normalized,
+      wasTrimmed: false
+    };
+  }
+
+  return {
+    text: normalized.slice(0, PDF_TEXT_LIMIT),
+    wasTrimmed: true
+  };
+}
+
+async function extractPdfText(file) {
+  if (!window.pdfjsLib) {
+    throw new Error("La libreria para leer PDF no cargo correctamente.");
+  }
+
+  const fileBuffer = await file.arrayBuffer();
+  const pdf = await window.pdfjsLib.getDocument({ data: fileBuffer }).promise;
+  const pageTexts = [];
+
+  for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
+    const page = await pdf.getPage(pageNumber);
+    const textContent = await page.getTextContent();
+    const pageText = textContent.items
+      .map((item) => ("str" in item ? item.str : ""))
+      .join(" ")
+      .trim();
+
+    if (pageText) {
+      pageTexts.push(`Pagina ${pageNumber}:\n${pageText}`);
+    }
+  }
+
+  return {
+    pageCount: pdf.numPages,
+    text: pageTexts.join("\n\n")
+  };
 }
 
 function updateUiState({ mode, state, message, loading = false }) {
@@ -199,13 +258,65 @@ async function requestAiCards(payload) {
   return response.json();
 }
 
+async function handlePdfSelection(file) {
+  if (!file) {
+    updatePdfStatus("Puedes pegar apuntes, subir un PDF o combinar ambas opciones.");
+    return;
+  }
+
+  if (file.type !== "application/pdf") {
+    updatePdfStatus("El archivo seleccionado no es un PDF valido.", true);
+    pdfFileInput.value = "";
+    return;
+  }
+
+  isPdfProcessing = true;
+  generateButton.disabled = true;
+  updatePdfStatus(`Leyendo "${file.name}"...`);
+
+  try {
+    const { pageCount, text } = await extractPdfText(file);
+
+    if (!text.trim()) {
+      throw new Error("No se encontro texto legible dentro del PDF.");
+    }
+
+    const { text: trimmedText, wasTrimmed } = trimPdfText(text);
+    notesInput.value = trimmedText;
+
+    updatePdfStatus(
+      wasTrimmed
+        ? `Se extrajo texto de ${pageCount} paginas y se recorto para mantener una peticion estable a la IA.`
+        : `Se extrajo texto de ${pageCount} paginas y ya puedes generar tarjetas.`
+    );
+  } catch (error) {
+    updatePdfStatus(
+      `No se pudo leer el PDF. ${error instanceof Error ? error.message : "Error desconocido."}`,
+      true
+    );
+  } finally {
+    isPdfProcessing = false;
+    generateButton.disabled = false;
+  }
+}
+
 function shuffleCards() {
   currentCards = [...currentCards].sort(() => Math.random() - 0.5);
   renderCards(currentCards);
 }
 
+pdfFileInput.addEventListener("change", async (event) => {
+  const selectedFile = event.target.files?.[0];
+  await handlePdfSelection(selectedFile);
+});
+
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
+
+  if (isPdfProcessing) {
+    updatePdfStatus("Espera a que termine la lectura del PDF antes de generar tarjetas.", true);
+    return;
+  }
 
   const subject = subjectInput.value.trim();
   const topic = topicInput.value.trim();
