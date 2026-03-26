@@ -74,6 +74,7 @@ let isPdfProcessing = false;
 let conceptCount = 1;
 
 const PDF_TEXT_LIMIT = 18000;
+const MIN_STUDY_NOTE_WORDS = 500;
 
 if (window.pdfjsLib) {
   window.pdfjsLib.GlobalWorkerOptions.workerSrc =
@@ -400,38 +401,46 @@ function renderSummary(result) {
   summaryResult.hidden = false;
 }
 
+function countWords(text) {
+  return String(text)
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean).length;
+}
+
+function getStudyNoteWordCount(result) {
+  const paragraphWords = (result.paragraphs || []).reduce(
+    (total, paragraph) => total + countWords(paragraph),
+    0
+  );
+  const keyPointWords = (result.keyPoints || []).reduce(
+    (total, point) => total + countWords(point),
+    0
+  );
+
+  return paragraphWords + keyPointWords;
+}
+
 function normalizeSummaryResponse(result, requestData) {
   if (result && typeof result.title === "string" && Array.isArray(result.paragraphs)) {
-    return {
+    const normalized = {
       title: result.title.trim() || `Apuntes de ${requestData.topic}`,
       paragraphs: result.paragraphs.filter(Boolean),
       keyPoints: Array.isArray(result.keyPoints) ? result.keyPoints.filter(Boolean) : [],
       model: result.model
     };
-  }
 
-  if (result && Array.isArray(result.cards) && result.cards.length > 0) {
-    const cardAnswers = result.cards
-      .map((card) => (typeof card?.answer === "string" ? card.answer.trim() : ""))
-      .filter(Boolean);
+    if (getStudyNoteWordCount(normalized) < MIN_STUDY_NOTE_WORDS) {
+      throw new Error(
+        `La IA devolvio apuntes demasiado cortos. Minimo esperado: ${MIN_STUDY_NOTE_WORDS} palabras.`
+      );
+    }
 
-    const cardQuestions = result.cards
-      .map((card) => (typeof card?.question === "string" ? card.question.trim() : ""))
-      .filter(Boolean);
-
-    return {
-      title: `${requestData.topic} en ${requestData.subject}`,
-      paragraphs: [
-        `Apuntes generados a partir del contenido trabajado en ${requestData.subject} sobre ${requestData.topic}.`,
-        ...cardAnswers.slice(0, 3)
-      ],
-      keyPoints: cardQuestions.slice(0, 4),
-      model: result.model
-    };
+    return normalized;
   }
 
   if (result && typeof result.summary === "string" && result.summary.trim()) {
-    return {
+    const normalized = {
       title: `${requestData.topic} en ${requestData.subject}`,
       paragraphs: result.summary
         .split(/\n{2,}/)
@@ -440,9 +449,23 @@ function normalizeSummaryResponse(result, requestData) {
       keyPoints: Array.isArray(result.keyPoints) ? result.keyPoints.filter(Boolean) : [],
       model: result.model
     };
+
+    if (getStudyNoteWordCount(normalized) < MIN_STUDY_NOTE_WORDS) {
+      throw new Error(
+        `La IA devolvio apuntes demasiado cortos. Minimo esperado: ${MIN_STUDY_NOTE_WORDS} palabras.`
+      );
+    }
+
+    return normalized;
   }
 
-  return buildLocalSummary(requestData);
+  if (result && Array.isArray(result.cards)) {
+    throw new Error(
+      "El backend devolvio tarjetas en lugar de apuntes. El despliegue de la funcion de apuntes aun no esta actualizado correctamente."
+    );
+  }
+
+  throw new Error("La respuesta de la IA no vino en formato de apuntes.");
 }
 
 function buildLocalSummary({ subject, topic, keyConcepts, notes }) {
