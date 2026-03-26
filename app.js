@@ -3,6 +3,7 @@ const summaryForm = document.querySelector("#summary-form");
 const views = document.querySelectorAll("[data-view]");
 const openViewButtons = document.querySelectorAll("[data-open-view]");
 const goHomeButtons = document.querySelectorAll("[data-go-home]");
+const moduleHomeButtons = document.querySelectorAll(".module-home-button");
 const subjectInput = document.querySelector("#subject");
 const topicInput = document.querySelector("#topic");
 const notesInput = document.querySelector("#notes");
@@ -92,6 +93,25 @@ function showView(viewName) {
   });
 
   window.scrollTo({ top: 0, behavior: "smooth" });
+  updateFloatingHomeButtons();
+}
+
+function updateFloatingHomeButtons() {
+  moduleHomeButtons.forEach((button) => {
+    const currentView = button.closest(".view");
+
+    if (!currentView || !currentView.classList.contains("is-active")) {
+      return;
+    }
+
+    const viewRect = currentView.getBoundingClientRect();
+    const scrollTop = window.scrollY || window.pageYOffset;
+    const viewTop = scrollTop + viewRect.top;
+    const maxTop = Math.max(currentView.scrollHeight - button.offsetHeight - 24, 20);
+    const nextTop = Math.min(Math.max(scrollTop - viewTop + 20, 20), maxTop);
+
+    button.style.top = `${nextTop}px`;
+  });
 }
 
 function normalizeText(text) {
@@ -601,6 +621,9 @@ goHomeButtons.forEach((button) => {
     showView("home");
   });
 });
+
+window.addEventListener("scroll", updateFloatingHomeButtons, { passive: true });
+window.addEventListener("resize", updateFloatingHomeButtons);
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
