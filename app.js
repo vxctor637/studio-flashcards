@@ -313,28 +313,25 @@ async function requestAiCards(payload) {
 
 async function requestAiSummary(payload) {
   try {
-    const response = await fetch("/api/flashcards", {
+    const response = await fetch("/api/notes", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({
-        ...payload,
-        tool: "summary"
-      })
+      body: JSON.stringify(payload)
     });
 
     if (!response.ok) {
       const data = await response.json().catch(() => null);
       const statusHint =
         response.status === 404
-          ? "La ruta de backend no existe en este entorno. Abre la app desde Vercel o desde un servidor con backend."
+          ? "La ruta /api/notes no existe en este entorno. Abre la app desde Vercel o desde un servidor con backend."
           : "";
 
       throw new Error(
         data?.error ||
           statusHint ||
-          `No fue posible generar el resumen con IA. Codigo HTTP: ${response.status}.`
+          `No fue posible generar los apuntes con IA. Codigo HTTP: ${response.status}.`
       );
     }
 
@@ -457,12 +454,6 @@ function normalizeSummaryResponse(result, requestData) {
     }
 
     return normalized;
-  }
-
-  if (result && Array.isArray(result.cards)) {
-    throw new Error(
-      "El backend devolvio tarjetas en lugar de apuntes. El despliegue de la funcion de apuntes aun no esta actualizado correctamente."
-    );
   }
 
   throw new Error("La respuesta de la IA no vino en formato de apuntes.");
