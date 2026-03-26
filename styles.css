@@ -386,8 +386,9 @@ body::before {
 }
 
 .module-home-button {
-  position: sticky;
+  position: fixed;
   top: 20px;
+  right: max(24px, calc((100vw - 1240px) / 2 + 26px));
   z-index: 5;
 }
 
@@ -778,5 +779,10 @@ button[type="submit"] {
   .hero h1 {
     max-width: none;
     font-size: clamp(2.2rem, 10vw, 3.4rem);
+  }
+
+  .module-home-button {
+    right: 16px;
+    top: 16px;
   }
 }
