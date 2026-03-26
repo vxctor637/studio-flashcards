@@ -400,6 +400,51 @@ function renderSummary(result) {
   summaryResult.hidden = false;
 }
 
+function normalizeSummaryResponse(result, requestData) {
+  if (result && typeof result.title === "string" && Array.isArray(result.paragraphs)) {
+    return {
+      title: result.title.trim() || `Resumen de ${requestData.topic}`,
+      paragraphs: result.paragraphs.filter(Boolean),
+      keyPoints: Array.isArray(result.keyPoints) ? result.keyPoints.filter(Boolean) : [],
+      model: result.model
+    };
+  }
+
+  if (result && Array.isArray(result.cards) && result.cards.length > 0) {
+    const cardAnswers = result.cards
+      .map((card) => (typeof card?.answer === "string" ? card.answer.trim() : ""))
+      .filter(Boolean);
+
+    const cardQuestions = result.cards
+      .map((card) => (typeof card?.question === "string" ? card.question.trim() : ""))
+      .filter(Boolean);
+
+    return {
+      title: `${requestData.topic} en ${requestData.subject}`,
+      paragraphs: [
+        `Resumen generado a partir del contenido trabajado en ${requestData.subject} sobre ${requestData.topic}.`,
+        ...cardAnswers.slice(0, 3)
+      ],
+      keyPoints: cardQuestions.slice(0, 4),
+      model: result.model
+    };
+  }
+
+  if (result && typeof result.summary === "string" && result.summary.trim()) {
+    return {
+      title: `${requestData.topic} en ${requestData.subject}`,
+      paragraphs: result.summary
+        .split(/\n{2,}/)
+        .map((item) => item.trim())
+        .filter(Boolean),
+      keyPoints: Array.isArray(result.keyPoints) ? result.keyPoints.filter(Boolean) : [],
+      model: result.model
+    };
+  }
+
+  return buildLocalSummary(requestData);
+}
+
 function buildLocalSummary({ subject, topic, keyConcepts, notes }) {
   const noteIdeas = splitNotesIntoIdeas(notes).slice(0, 6);
   const title = `${topic || "Tema principal"} en ${subject}`;
@@ -569,6 +614,7 @@ summaryForm.addEventListener("submit", async (event) => {
   const topic = summaryTopicInput.value.trim();
   const notes = summaryNotesInput.value.trim();
   const keyConcepts = getKeyConcepts();
+  const requestData = { subject, topic, keyConcepts, notes };
 
   if (!subject) {
     summarySubjectInput.focus();
@@ -591,19 +637,15 @@ summaryForm.addEventListener("submit", async (event) => {
   });
 
   try {
-    const result = await requestAiSummary({
-      subject,
-      topic,
-      keyConcepts,
-      notes
-    });
+    const result = await requestAiSummary(requestData);
+    const normalizedResult = normalizeSummaryResponse(result, requestData);
 
-    renderSummary(result);
+    renderSummary(normalizedResult);
     updateSummaryUiState({
       message: `El resumen fue generado con IA y ya esta listo para estudiar. Modelo: ${result.model || "Gemini"}.`
     });
   } catch (error) {
-    renderSummary(buildLocalSummary({ subject, topic, keyConcepts, notes }));
+    renderSummary(buildLocalSummary(requestData));
     updateSummaryUiState({
       message: `La IA no respondio correctamente. Se genero un resumen local. Detalle: ${error instanceof Error ? error.message : "Error desconocido."}`
     });
