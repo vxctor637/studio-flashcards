@@ -8,269 +8,298 @@
   </head>
   <body>
     <main class="app-shell">
-      <section class="hero">
-        <div class="topbar">
-          <div>
-            <p class="eyebrow">Campus IA</p>
-            <p class="brand-copy">Tu espacio para estudiar mejor cada semana.</p>
-          </div>
-          <div class="topbar-badge">Beta para estudiantes</div>
-        </div>
-
-        <div class="hero-grid">
-          <div class="hero-content">
-            <span class="hero-pill">Plataforma de estudio inteligente</span>
-            <h1>Una app para estudiar con IA, empezando por tus tarjetas</h1>
-            <p class="hero-copy">
-              Organiza tus apuntes, transforma PDFs en material util y estudia con una interfaz clara,
-              entretenida y profesional. La primera herramienta activa es tarjetas de estudio.
-            </p>
-
-            <div class="hero-actions">
-              <a class="hero-link primary-link" href="#flashcards-workspace">Crear tarjetas</a>
-              <a class="hero-link secondary-link" href="#study-tools">Ver herramientas</a>
+      <section class="view view-home is-active" id="home-view" data-view="home">
+        <section class="hero">
+          <div class="topbar">
+            <div>
+              <p class="eyebrow">Campus IA</p>
+              <p class="brand-copy">Tu espacio para estudiar mejor cada semana.</p>
             </div>
+            <div class="topbar-badge">Beta para estudiantes</div>
           </div>
 
-          <aside class="hero-preview">
-            <p class="preview-label">Panel de hoy</p>
-            <div class="preview-card">
-              <span class="preview-tag">Activo ahora</span>
-              <strong>Tarjetas de estudio</strong>
-              <p>Genera preguntas y respuestas desde tus apuntes, texto pegado o archivos PDF.</p>
-            </div>
-
-            <div class="preview-metrics">
-              <div>
-                <span>Modo</span>
-                <strong>IA + PDF</strong>
-              </div>
-              <div>
-                <span>Objetivo</span>
-                <strong>Memoria activa</strong>
-              </div>
-            </div>
-          </aside>
-        </div>
-      </section>
-
-      <section class="tools-panel" id="study-tools">
-        <div class="section-heading">
-          <p class="eyebrow">Herramientas</p>
-          <h2>Tu app de estudio crecera desde aqui</h2>
-        </div>
-
-        <div class="tools-grid">
-          <article class="tool-card tool-card-active">
-            <span class="tool-state">Disponible</span>
-            <h3>Tarjetas de estudio</h3>
-            <p>Convierte ideas, resumenes y PDFs en preguntas listas para practicar.</p>
-          </article>
-
-          <article class="tool-card tool-card-active">
-            <span class="tool-state">Disponible</span>
-            <h3>Resumenes</h3>
-            <p>Genera versiones cortas y ordenadas de tus apuntes para repasar mas rapido.</p>
-          </article>
-
-          <article class="tool-card">
-            <span class="tool-state tool-state-soon">Proximamente</span>
-            <h3>Quiz interactivo</h3>
-            <p>Practica con preguntas automaticas y detecta que temas necesitan mas refuerzo.</p>
-          </article>
-        </div>
-      </section>
-
-      <section class="panel form-panel" id="flashcards-workspace">
-        <div class="section-heading">
-          <p class="eyebrow">Workspace</p>
-          <h2>Creador de tarjetas con IA</h2>
-        </div>
-
-        <form id="flashcard-form">
-          <label for="subject">Materia</label>
-          <input
-            id="subject"
-            name="subject"
-            type="text"
-            placeholder="Ej: Biologia, Historia, Matematicas"
-            required
-          />
-
-          <label for="topic">Tema</label>
-          <input
-            id="topic"
-            name="topic"
-            type="text"
-            placeholder="Ej: Celulas, Revolucion Francesa, Algebra"
-          />
-
-          <label for="notes">Apuntes o contenido base</label>
-          <textarea
-            id="notes"
-            name="notes"
-            rows="8"
-            placeholder="Pega aqui definiciones, conceptos, fechas, formulas o ideas clave para que la IA cree mejores tarjetas."
-          ></textarea>
-
-          <div class="upload-block">
-            <div class="upload-copy">
-              <label for="pdf-file">PDF de apuntes</label>
-              <p>
-                Sube un PDF con texto para extraer su contenido y usarlo como base para las tarjetas.
+          <div class="hero-grid">
+            <div class="hero-content">
+              <span class="hero-pill">Plataforma de estudio inteligente</span>
+              <h1>Elige como quieres estudiar hoy</h1>
+              <p class="hero-copy">
+                Entra a tus herramientas de estudio con IA desde una portada clara y ordenada.
+                Empieza con tarjetas de estudio o con resumenes a partir de tus apuntes.
               </p>
             </div>
-            <input id="pdf-file" name="pdfFile" type="file" accept="application/pdf" />
-            <p id="pdf-status" class="upload-status">
-              Puedes pegar apuntes, subir un PDF o combinar ambas opciones.
-            </p>
+
+            <aside class="hero-preview">
+              <p class="preview-label">Experiencia principal</p>
+              <div class="preview-card">
+                <span class="preview-tag">Listo para usar</span>
+                <strong>Tarjetas y resumenes</strong>
+                <p>Accede a cada modulo por separado para mantener una experiencia mas limpia.</p>
+              </div>
+
+              <div class="preview-metrics">
+                <div>
+                  <span>Herramientas</span>
+                  <strong>2 activas</strong>
+                </div>
+                <div>
+                  <span>Enfoque</span>
+                  <strong>Estudio guiado</strong>
+                </div>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <section class="tools-panel">
+          <div class="section-heading">
+            <p class="eyebrow">Herramientas</p>
+            <h2>Entra a tu modulo de estudio</h2>
           </div>
 
-          <div class="form-grid">
+          <div class="tools-grid">
+            <article class="tool-card tool-card-active tool-card-link" data-open-view="flashcards">
+              <span class="tool-state">Disponible</span>
+              <h3>Tarjetas de estudio</h3>
+              <p>Convierte ideas, resumenes y PDFs en preguntas listas para practicar.</p>
+              <button type="button" class="tool-action">Entrar al modulo</button>
+            </article>
+
+            <article class="tool-card tool-card-active tool-card-link" data-open-view="summaries">
+              <span class="tool-state">Disponible</span>
+              <h3>Resumenes</h3>
+              <p>Genera versiones claras y ordenadas de tus apuntes para repasar mas rapido.</p>
+              <button type="button" class="tool-action">Entrar al modulo</button>
+            </article>
+
+            <article class="tool-card">
+              <span class="tool-state tool-state-soon">Proximamente</span>
+              <h3>Quiz interactivo</h3>
+              <p>Practica con preguntas automaticas y detecta que temas necesitan mas refuerzo.</p>
+            </article>
+          </div>
+        </section>
+      </section>
+
+      <section class="view" id="flashcards-view" data-view="flashcards" hidden>
+        <section class="panel module-header">
+          <div class="module-header-row">
             <div>
-              <label for="card-total">Cantidad de tarjetas</label>
-              <select id="card-total" name="cardTotal">
-                <option value="5">5</option>
-                <option value="8" selected>8</option>
-                <option value="10">10</option>
-              </select>
+              <p class="eyebrow">Modulo</p>
+              <h2>Tarjetas de estudio con IA</h2>
+            </div>
+            <button type="button" class="secondary" data-go-home>Volver al inicio</button>
+          </div>
+          <p class="module-copy">
+            Genera tarjetas desde materia, tema, apuntes escritos o PDFs con texto.
+          </p>
+        </section>
+
+        <section class="panel form-panel" id="flashcards-workspace">
+          <div class="section-heading">
+            <p class="eyebrow">Workspace</p>
+            <h2>Creador de tarjetas con IA</h2>
+          </div>
+
+          <form id="flashcard-form">
+            <label for="subject">Materia</label>
+            <input
+              id="subject"
+              name="subject"
+              type="text"
+              placeholder="Ej: Biologia, Historia, Matematicas"
+              required
+            />
+
+            <label for="topic">Tema</label>
+            <input
+              id="topic"
+              name="topic"
+              type="text"
+              placeholder="Ej: Celulas, Revolucion Francesa, Algebra"
+            />
+
+            <label for="notes">Apuntes o contenido base</label>
+            <textarea
+              id="notes"
+              name="notes"
+              rows="8"
+              placeholder="Pega aqui definiciones, conceptos, fechas, formulas o ideas clave para que la IA cree mejores tarjetas."
+            ></textarea>
+
+            <div class="upload-block">
+              <div class="upload-copy">
+                <label for="pdf-file">PDF de apuntes</label>
+                <p>
+                  Sube un PDF con texto para extraer su contenido y usarlo como base para las tarjetas.
+                </p>
+              </div>
+              <input id="pdf-file" name="pdfFile" type="file" accept="application/pdf" />
+              <p id="pdf-status" class="upload-status">
+                Puedes pegar apuntes, subir un PDF o combinar ambas opciones.
+              </p>
             </div>
 
+            <div class="form-grid">
+              <div>
+                <label for="card-total">Cantidad de tarjetas</label>
+                <select id="card-total" name="cardTotal">
+                  <option value="5">5</option>
+                  <option value="8" selected>8</option>
+                  <option value="10">10</option>
+                </select>
+              </div>
+
+              <div>
+                <label for="difficulty">Nivel</label>
+                <select id="difficulty" name="difficulty">
+                  <option value="basico">Basico</option>
+                  <option value="intermedio" selected>Intermedio</option>
+                  <option value="avanzado">Avanzado</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="actions">
+              <button type="submit" id="generate-button">Generar con IA</button>
+              <button type="button" id="load-demo" class="secondary">Cargar ejemplo</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="panel summary-panel">
+          <div class="section-heading compact-heading">
+            <p class="eyebrow">Sesion</p>
+            <h2>Estado de estudio</h2>
+          </div>
+
+          <div class="summary-row">
+            <span>Tarjetas generadas</span>
+            <strong id="card-count">0</strong>
+          </div>
+          <div class="summary-row">
+            <span>Modo activo</span>
+            <strong id="generation-mode">Listo para IA</strong>
+          </div>
+          <div class="summary-row">
+            <span>Estado</span>
+            <strong id="generation-status">Esperando datos</strong>
+          </div>
+        </section>
+
+        <section class="panel results-panel">
+          <div class="results-header">
             <div>
-              <label for="difficulty">Nivel</label>
-              <select id="difficulty" name="difficulty">
-                <option value="basico">Basico</option>
-                <option value="intermedio" selected>Intermedio</option>
-                <option value="avanzado">Avanzado</option>
-              </select>
+              <p class="eyebrow">Tus Tarjetas</p>
+              <h2>Lista para practicar</h2>
+            </div>
+            <button type="button" id="shuffle-cards" class="secondary">Mezclar</button>
+          </div>
+
+          <p id="status-message" class="status-message">
+            Completa la materia y genera tus primeras tarjetas.
+          </p>
+
+          <div id="empty-state" class="empty-state">
+            Cuando actives la version con Gemini, esta seccion recibira tarjetas generadas
+            automaticamente por IA.
+          </div>
+
+          <div id="cards-grid" class="cards-grid" aria-live="polite"></div>
+        </section>
+      </section>
+
+      <section class="view" id="summaries-view" data-view="summaries" hidden>
+        <section class="panel module-header">
+          <div class="module-header-row">
+            <div>
+              <p class="eyebrow">Modulo</p>
+              <h2>Resumenes con IA</h2>
+            </div>
+            <button type="button" class="secondary" data-go-home>Volver al inicio</button>
+          </div>
+          <p class="module-copy">
+            Organiza materia, tema, conceptos clave y apuntes para obtener un resumen completo.
+          </p>
+        </section>
+
+        <section class="panel form-panel" id="summaries-workspace">
+          <div class="section-heading">
+            <p class="eyebrow">Workspace</p>
+            <h2>Generador de resumenes con IA</h2>
+          </div>
+
+          <form id="summary-form">
+            <label for="summary-subject">Materia</label>
+            <input
+              id="summary-subject"
+              name="summarySubject"
+              type="text"
+              placeholder="Ej: Historia, Quimica, Lenguaje"
+              required
+            />
+
+            <label for="summary-topic">Tema</label>
+            <input
+              id="summary-topic"
+              name="summaryTopic"
+              type="text"
+              placeholder="Ej: Independencia de Chile, Enlaces quimicos"
+              required
+            />
+
+            <div class="concepts-header">
+              <label for="key-concept-1">Conceptos clave</label>
+              <button type="button" id="add-concept" class="icon-button">+</button>
+            </div>
+
+            <div id="key-concepts-list" class="concepts-list">
+              <div class="concept-row">
+                <input
+                  id="key-concept-1"
+                  name="keyConcept"
+                  type="text"
+                  placeholder="Ej: Causas, consecuencias, personajes"
+                />
+              </div>
+            </div>
+
+            <label for="summary-notes">Apuntes del estudiante</label>
+            <textarea
+              id="summary-notes"
+              name="summaryNotes"
+              rows="8"
+              placeholder="Pega aqui tus apuntes, definiciones, datos importantes o ideas desordenadas para que la IA construya un resumen completo."
+              required
+            ></textarea>
+
+            <div class="actions">
+              <button type="submit" id="generate-summary-button">Generar resumen</button>
+              <button type="button" id="load-summary-demo" class="secondary">Cargar ejemplo</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="panel summary-output-panel">
+          <div class="results-header">
+            <div>
+              <p class="eyebrow">Resumen IA</p>
+              <h2>Resumen listo para repasar</h2>
             </div>
           </div>
 
-          <div class="actions">
-            <button type="submit" id="generate-button">Generar con IA</button>
-            <button type="button" id="load-demo" class="secondary">Cargar ejemplo</button>
-          </div>
-        </form>
-      </section>
+          <p id="summary-status-message" class="status-message">
+            Completa la materia, el tema y tus apuntes para generar un resumen con IA.
+          </p>
 
-      <section class="panel summary-panel">
-        <div class="section-heading compact-heading">
-          <p class="eyebrow">Sesion</p>
-          <h2>Estado de estudio</h2>
-        </div>
-
-        <div class="summary-row">
-          <span>Tarjetas generadas</span>
-          <strong id="card-count">0</strong>
-        </div>
-        <div class="summary-row">
-          <span>Modo activo</span>
-          <strong id="generation-mode">Listo para IA</strong>
-        </div>
-        <div class="summary-row">
-          <span>Estado</span>
-          <strong id="generation-status">Esperando datos</strong>
-        </div>
-      </section>
-
-      <section class="panel form-panel" id="summaries-workspace">
-        <div class="section-heading">
-          <p class="eyebrow">Workspace</p>
-          <h2>Generador de resumenes con IA</h2>
-        </div>
-
-        <form id="summary-form">
-          <label for="summary-subject">Materia</label>
-          <input
-            id="summary-subject"
-            name="summarySubject"
-            type="text"
-            placeholder="Ej: Historia, Quimica, Lenguaje"
-            required
-          />
-
-          <label for="summary-topic">Tema</label>
-          <input
-            id="summary-topic"
-            name="summaryTopic"
-            type="text"
-            placeholder="Ej: Independencia de Chile, Enlaces quimicos"
-            required
-          />
-
-          <div class="concepts-header">
-            <label for="key-concept-1">Conceptos clave</label>
-            <button type="button" id="add-concept" class="icon-button">+</button>
+          <div id="summary-empty-state" class="empty-state">
+            Aqui aparecera un resumen claro, ordenado y completo en base a la informacion del estudiante.
           </div>
 
-          <div id="key-concepts-list" class="concepts-list">
-            <div class="concept-row">
-              <input
-                id="key-concept-1"
-                name="keyConcept"
-                type="text"
-                placeholder="Ej: Causas, consecuencias, personajes"
-              />
-            </div>
-          </div>
-
-          <label for="summary-notes">Apuntes del estudiante</label>
-          <textarea
-            id="summary-notes"
-            name="summaryNotes"
-            rows="8"
-            placeholder="Pega aqui tus apuntes, definiciones, datos importantes o ideas desordenadas para que la IA construya un resumen completo."
-            required
-          ></textarea>
-
-          <div class="actions">
-            <button type="submit" id="generate-summary-button">Generar resumen</button>
-            <button type="button" id="load-summary-demo" class="secondary">Cargar ejemplo</button>
-          </div>
-        </form>
-      </section>
-
-      <section class="panel summary-output-panel">
-        <div class="results-header">
-          <div>
-            <p class="eyebrow">Resumen IA</p>
-            <h2>Resumen listo para repasar</h2>
-          </div>
-        </div>
-
-        <p id="summary-status-message" class="status-message">
-          Completa la materia, el tema y tus apuntes para generar un resumen con IA.
-        </p>
-
-        <div id="summary-empty-state" class="empty-state">
-          Aqui aparecera un resumen claro, ordenado y completo en base a la informacion del estudiante.
-        </div>
-
-        <article id="summary-result" class="summary-result" hidden>
-          <h3 id="summary-result-title" class="summary-result-title"></h3>
-          <div id="summary-result-content" class="summary-result-content"></div>
-        </article>
-      </section>
-
-      <section class="panel results-panel">
-        <div class="results-header">
-          <div>
-            <p class="eyebrow">Tus Tarjetas</p>
-            <h2>Lista para practicar</h2>
-          </div>
-          <button type="button" id="shuffle-cards" class="secondary">Mezclar</button>
-        </div>
-
-        <p id="status-message" class="status-message">
-          Completa la materia y genera tus primeras tarjetas.
-        </p>
-
-        <div id="empty-state" class="empty-state">
-          Cuando actives la version con Gemini, esta seccion recibira tarjetas generadas
-          automaticamente por IA.
-        </div>
-
-        <div id="cards-grid" class="cards-grid" aria-live="polite"></div>
+          <article id="summary-result" class="summary-result" hidden>
+            <h3 id="summary-result-title" class="summary-result-title"></h3>
+            <div id="summary-result-content" class="summary-result-content"></div>
+          </article>
+        </section>
       </section>
     </main>
 

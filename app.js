@@ -1,5 +1,8 @@
 const form = document.querySelector("#flashcard-form");
 const summaryForm = document.querySelector("#summary-form");
+const views = document.querySelectorAll("[data-view]");
+const openViewButtons = document.querySelectorAll("[data-open-view]");
+const goHomeButtons = document.querySelectorAll("[data-go-home]");
 const subjectInput = document.querySelector("#subject");
 const topicInput = document.querySelector("#topic");
 const notesInput = document.querySelector("#notes");
@@ -75,6 +78,16 @@ const PDF_TEXT_LIMIT = 18000;
 if (window.pdfjsLib) {
   window.pdfjsLib.GlobalWorkerOptions.workerSrc =
     "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+}
+
+function showView(viewName) {
+  views.forEach((view) => {
+    const isActive = view.dataset.view === viewName;
+    view.hidden = !isActive;
+    view.classList.toggle("is-active", isActive);
+  });
+
+  window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 function normalizeText(text) {
@@ -412,6 +425,22 @@ function shuffleCards() {
 pdfFileInput.addEventListener("change", async (event) => {
   const selectedFile = event.target.files?.[0];
   await handlePdfSelection(selectedFile);
+});
+
+openViewButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    const targetView = button.dataset.openView;
+
+    if (targetView) {
+      showView(targetView);
+    }
+  });
+});
+
+goHomeButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    showView("home");
+  });
 });
 
 form.addEventListener("submit", async (event) => {
