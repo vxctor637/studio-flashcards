@@ -76,7 +76,6 @@ let currentCards = [];
 let isPdfProcessing = false;
 let conceptCount = 1;
 let notesProgressInterval = null;
-let homeButtonAnimationFrame = null;
 
 const PDF_TEXT_LIMIT = 18000;
 const MIN_STUDY_NOTE_WORDS = 500;
@@ -98,11 +97,6 @@ function showView(viewName) {
 }
 
 function updateFloatingHomeButtons() {
-  if (homeButtonAnimationFrame) {
-    cancelAnimationFrame(homeButtonAnimationFrame);
-  }
-
-  homeButtonAnimationFrame = window.requestAnimationFrame(() => {
   moduleHomeButtons.forEach((button) => {
     const currentView = button.closest(".view");
 
@@ -117,8 +111,6 @@ function updateFloatingHomeButtons() {
     const nextOffset = Math.min(Math.max(scrollTop - viewTop, 0), maxOffset);
 
     button.style.transform = `translateY(${nextOffset}px)`;
-  });
-    homeButtonAnimationFrame = null;
   });
 }
 
