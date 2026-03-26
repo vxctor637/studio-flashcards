@@ -173,7 +173,7 @@ function updateUiState({ mode, state, message, loading = false }) {
 function updateSummaryUiState({ message, loading = false }) {
   summaryStatusMessage.textContent = message;
   generateSummaryButton.disabled = loading;
-  generateSummaryButton.textContent = loading ? "Generando..." : "Generar resumen";
+  generateSummaryButton.textContent = loading ? "Generando..." : "Generar apuntes";
 }
 
 function renderCards(cards) {
@@ -372,7 +372,7 @@ function getKeyConcepts() {
 }
 
 function renderSummary(result) {
-  summaryResultTitle.textContent = result.title || "Resumen generado";
+  summaryResultTitle.textContent = result.title || "Apuntes generados";
   summaryResultContent.innerHTML = "";
 
   const paragraphs = Array.isArray(result.paragraphs) ? result.paragraphs : [];
@@ -403,7 +403,7 @@ function renderSummary(result) {
 function normalizeSummaryResponse(result, requestData) {
   if (result && typeof result.title === "string" && Array.isArray(result.paragraphs)) {
     return {
-      title: result.title.trim() || `Resumen de ${requestData.topic}`,
+      title: result.title.trim() || `Apuntes de ${requestData.topic}`,
       paragraphs: result.paragraphs.filter(Boolean),
       keyPoints: Array.isArray(result.keyPoints) ? result.keyPoints.filter(Boolean) : [],
       model: result.model
@@ -422,7 +422,7 @@ function normalizeSummaryResponse(result, requestData) {
     return {
       title: `${requestData.topic} en ${requestData.subject}`,
       paragraphs: [
-        `Resumen generado a partir del contenido trabajado en ${requestData.subject} sobre ${requestData.topic}.`,
+        `Apuntes generados a partir del contenido trabajado en ${requestData.subject} sobre ${requestData.topic}.`,
         ...cardAnswers.slice(0, 3)
       ],
       keyPoints: cardQuestions.slice(0, 4),
@@ -448,10 +448,10 @@ function normalizeSummaryResponse(result, requestData) {
 function buildLocalSummary({ subject, topic, keyConcepts, notes }) {
   const noteIdeas = splitNotesIntoIdeas(notes).slice(0, 6);
   const title = `${topic || "Tema principal"} en ${subject}`;
-  const intro = `Este resumen aborda ${topic || "el tema principal"} dentro de ${subject}, organizando la informacion mas importante en un formato claro para estudio.`;
+  const intro = `Estos apuntes desarrollan ${topic || "el tema principal"} dentro de ${subject}, organizando la informacion mas importante en un formato claro para estudio.`;
   const conceptsLine = keyConcepts.length
     ? `Conceptos clave a reforzar: ${keyConcepts.join(", ")}.`
-    : `El estudiante no marco conceptos clave especificos, por lo que el resumen prioriza las ideas centrales detectadas en los apuntes.`;
+    : `El estudiante no marco conceptos clave especificos, por lo que los apuntes priorizan las ideas centrales detectadas en el contenido ingresado.`;
   const closing = `Para estudiar mejor este contenido, conviene relacionar definiciones, ejemplos y conexiones entre las ideas principales.`;
 
   return {
@@ -632,7 +632,7 @@ summaryForm.addEventListener("submit", async (event) => {
   }
 
   updateSummaryUiState({
-    message: "La app esta construyendo un resumen completo con IA.",
+    message: "La app esta construyendo apuntes completos con IA.",
     loading: true
   });
 
@@ -642,12 +642,12 @@ summaryForm.addEventListener("submit", async (event) => {
 
     renderSummary(normalizedResult);
     updateSummaryUiState({
-      message: `El resumen fue generado con IA y ya esta listo para estudiar. Modelo: ${result.model || "Gemini"}.`
+      message: `Los apuntes fueron generados con IA y ya estan listos para estudiar. Modelo: ${result.model || "Gemini"}.`
     });
   } catch (error) {
     renderSummary(buildLocalSummary(requestData));
     updateSummaryUiState({
-      message: `La IA no respondio correctamente. Se genero un resumen local. Detalle: ${error instanceof Error ? error.message : "Error desconocido."}`
+      message: `La IA no respondio correctamente. Se generaron apuntes locales. Detalle: ${error instanceof Error ? error.message : "Error desconocido."}`
     });
   }
 });

@@ -24,7 +24,7 @@
               <h1>Elige como quieres estudiar hoy</h1>
               <p class="hero-copy">
                 Entra a tus herramientas de estudio con IA desde una portada clara y ordenada.
-                Empieza con tarjetas de estudio o con resumenes a partir de tus apuntes.
+                Empieza con tarjetas de estudio o con apuntes generados a partir de tus apuntes base.
               </p>
             </div>
 
@@ -32,7 +32,7 @@
               <p class="preview-label">Experiencia principal</p>
               <div class="preview-card">
                 <span class="preview-tag">Listo para usar</span>
-                <strong>Tarjetas y resumenes</strong>
+                <strong>Tarjetas y apuntes</strong>
                 <p>Accede a cada modulo por separado para mantener una experiencia mas limpia.</p>
               </div>
 
@@ -60,14 +60,14 @@
             <article class="tool-card tool-card-active tool-card-link" data-open-view="flashcards">
               <span class="tool-state">Disponible</span>
               <h3>Tarjetas de estudio</h3>
-              <p>Convierte ideas, resumenes y PDFs en preguntas listas para practicar.</p>
+              <p>Convierte ideas, apuntes y PDFs en preguntas listas para practicar.</p>
               <button type="button" class="tool-action">Entrar al modulo</button>
             </article>
 
             <article class="tool-card tool-card-active tool-card-link" data-open-view="summaries">
               <span class="tool-state">Disponible</span>
-              <h3>Resumenes</h3>
-              <p>Genera versiones claras y ordenadas de tus apuntes para repasar mas rapido.</p>
+              <h3>Generador de apuntes</h3>
+              <p>Crea apuntes claros, explicados y profundos a partir de tus ideas base.</p>
               <button type="button" class="tool-action">Entrar al modulo</button>
             </article>
 
@@ -213,19 +213,19 @@
           <div class="module-header-row">
             <div>
               <p class="eyebrow">Modulo</p>
-              <h2>Resumenes con IA</h2>
+              <h2>Apuntes con IA</h2>
             </div>
             <button type="button" class="secondary" data-go-home>Volver al inicio</button>
           </div>
           <p class="module-copy">
-            Organiza materia, tema, conceptos clave y apuntes para obtener un resumen completo.
+            Organiza materia, tema, conceptos clave y apuntes para obtener un apunte de estudio completo.
           </p>
         </section>
 
         <section class="panel form-panel" id="summaries-workspace">
           <div class="section-heading">
             <p class="eyebrow">Workspace</p>
-            <h2>Generador de resumenes con IA</h2>
+            <h2>Generador de apuntes con IA</h2>
           </div>
 
           <form id="summary-form">
@@ -268,12 +268,12 @@
               id="summary-notes"
               name="summaryNotes"
               rows="8"
-              placeholder="Pega aqui tus apuntes, definiciones, datos importantes o ideas desordenadas para que la IA construya un resumen completo."
+              placeholder="Pega aqui tus apuntes, definiciones, datos importantes o ideas desordenadas para que la IA construya un apunte completo."
               required
             ></textarea>
 
             <div class="actions">
-              <button type="submit" id="generate-summary-button">Generar resumen</button>
+              <button type="submit" id="generate-summary-button">Generar apuntes</button>
               <button type="button" id="load-summary-demo" class="secondary">Cargar ejemplo</button>
             </div>
           </form>
@@ -282,17 +282,17 @@
         <section class="panel summary-output-panel">
           <div class="results-header">
             <div>
-              <p class="eyebrow">Resumen IA</p>
-              <h2>Resumen listo para repasar</h2>
+              <p class="eyebrow">Apuntes IA</p>
+              <h2>Apuntes listos para estudiar</h2>
             </div>
           </div>
 
           <p id="summary-status-message" class="status-message">
-            Completa la materia, el tema y tus apuntes para generar un resumen con IA.
+            Completa la materia, el tema y tus apuntes para generar apuntes con IA.
           </p>
 
           <div id="summary-empty-state" class="empty-state">
-            Aqui aparecera un resumen claro, ordenado y completo en base a la informacion del estudiante.
+            Aqui apareceran apuntes claros, ordenados y completos en base a la informacion del estudiante.
           </div>
 
           <article id="summary-result" class="summary-result" hidden>
