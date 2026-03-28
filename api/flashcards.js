@@ -1,5 +1,6 @@
 const { handleFlashcards } = require("./flashcards-handler");
 const { handleNotes } = require("./notes-handler");
+const { handleQuiz } = require("./quiz-handler");
 
 function getApiKey() {
   return process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || "";
@@ -23,6 +24,11 @@ module.exports = async function handler(req, res) {
   try {
     if (tool === "notes") {
       await handleNotes({ req, res, apiKey });
+      return;
+    }
+
+    if (tool === "quiz") {
+      await handleQuiz({ req, res, apiKey });
       return;
     }
 

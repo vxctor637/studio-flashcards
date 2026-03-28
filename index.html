@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Campus IA | Estudia con tarjetas inteligentes</title>
-    <link rel="stylesheet" href="./styles.css?v=20260326c" />
+    <link rel="stylesheet" href="./styles.css?v=20260327a" />
   </head>
   <body>
     <main class="app-shell">
@@ -39,7 +39,7 @@
               <div class="preview-metrics">
                 <div>
                   <span>Herramientas</span>
-                  <strong>2 activas</strong>
+                  <strong>3 activas</strong>
                 </div>
                 <div>
                   <span>Enfoque</span>
@@ -71,10 +71,11 @@
               <button type="button" class="tool-action">Entrar al modulo</button>
             </article>
 
-            <article class="tool-card">
-              <span class="tool-state tool-state-soon">Proximamente</span>
+            <article class="tool-card tool-card-active tool-card-link" data-open-view="quiz">
+              <span class="tool-state">Disponible</span>
               <h3>Quiz interactivo</h3>
-              <p>Practica con preguntas automaticas y detecta que temas necesitan mas refuerzo.</p>
+              <p>Practica con preguntas de opcion multiple y detecta que temas necesitan mas refuerzo.</p>
+              <button type="button" class="tool-action">Entrar al modulo</button>
             </article>
           </div>
         </section>
@@ -305,6 +306,141 @@
           </article>
         </section>
       </section>
+
+      <section class="view" id="quiz-view" data-view="quiz" hidden>
+        <section class="panel module-header">
+          <div class="module-header-row">
+            <div>
+              <p class="eyebrow">Modulo</p>
+              <h2>Quiz interactivo con IA</h2>
+            </div>
+            <button type="button" class="secondary module-home-button" data-go-home>Volver al inicio</button>
+          </div>
+          <p class="module-copy">
+            Genera preguntas de opcion multiple para practicar, revisar errores y medir tu avance.
+          </p>
+        </section>
+
+        <section class="panel form-panel" id="quiz-workspace">
+          <div class="section-heading">
+            <p class="eyebrow">Workspace</p>
+            <h2>Creador de quiz con IA</h2>
+          </div>
+
+          <form id="quiz-form">
+            <label for="quiz-subject">Materia</label>
+            <input
+              id="quiz-subject"
+              name="quizSubject"
+              type="text"
+              placeholder="Ej: Biologia, Historia, Psicologia"
+              required
+            />
+
+            <label for="quiz-topic">Tema</label>
+            <input
+              id="quiz-topic"
+              name="quizTopic"
+              type="text"
+              placeholder="Ej: Celulas, Revolucion Francesa, Psicoanalisis"
+              required
+            />
+
+            <label for="quiz-notes">Apuntes o contenido base</label>
+            <textarea
+              id="quiz-notes"
+              name="quizNotes"
+              rows="8"
+              placeholder="Pega apuntes, ideas clave o contenido base para que la IA cree preguntas mas precisas."
+            ></textarea>
+
+            <div class="form-grid">
+              <div>
+                <label for="quiz-total">Cantidad de preguntas</label>
+                <select id="quiz-total" name="quizTotal">
+                  <option value="5" selected>5</option>
+                  <option value="8">8</option>
+                  <option value="10">10</option>
+                </select>
+              </div>
+
+              <div>
+                <label for="quiz-difficulty">Nivel</label>
+                <select id="quiz-difficulty" name="quizDifficulty">
+                  <option value="basico">Basico</option>
+                  <option value="intermedio" selected>Intermedio</option>
+                  <option value="avanzado">Avanzado</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="actions">
+              <button type="submit" id="generate-quiz-button">Generar quiz</button>
+              <button type="button" id="load-quiz-demo" class="secondary">Cargar ejemplo</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="panel summary-panel">
+          <div class="section-heading compact-heading">
+            <p class="eyebrow">Sesion</p>
+            <h2>Estado del quiz</h2>
+          </div>
+
+          <div class="summary-row">
+            <span>Preguntas</span>
+            <strong id="quiz-count">0</strong>
+          </div>
+          <div class="summary-row">
+            <span>Progreso</span>
+            <strong id="quiz-progress-label">Sin iniciar</strong>
+          </div>
+          <div class="summary-row">
+            <span>Puntaje</span>
+            <strong id="quiz-score-label">0/0</strong>
+          </div>
+        </section>
+
+        <section class="panel results-panel">
+          <div class="results-header">
+            <div>
+              <p class="eyebrow">Quiz IA</p>
+              <h2>Practica y evalua tu avance</h2>
+            </div>
+          </div>
+
+          <p id="quiz-status-message" class="status-message">
+            Completa la materia y genera tu primer quiz con IA.
+          </p>
+
+          <div id="quiz-empty-state" class="empty-state">
+            Aqui apareceran tus preguntas de opcion multiple para practicar.
+          </div>
+
+          <section id="quiz-player" class="quiz-player" hidden>
+            <div class="quiz-meta">
+              <span id="quiz-step">Pregunta 1 de 5</span>
+              <strong id="quiz-live-score">Puntaje: 0</strong>
+            </div>
+
+            <article class="quiz-card">
+              <h3 id="quiz-question" class="quiz-question"></h3>
+              <div id="quiz-options" class="quiz-options"></div>
+            </article>
+
+            <div id="quiz-feedback" class="quiz-feedback" hidden></div>
+
+            <div class="quiz-actions">
+              <button type="button" id="next-question-button" class="secondary" hidden>
+                Siguiente pregunta
+              </button>
+              <button type="button" id="restart-quiz-button" class="secondary" hidden>
+                Reiniciar quiz
+              </button>
+            </div>
+          </section>
+        </section>
+      </section>
     </main>
 
     <template id="card-template">
@@ -323,6 +459,6 @@
     </template>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <script src="./app.js?v=20260326c"></script>
+    <script src="./app.js?v=20260327a"></script>
   </body>
 </html>

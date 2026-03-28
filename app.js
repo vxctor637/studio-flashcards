@@ -11,6 +11,14 @@ const pdfFileInput = document.querySelector("#pdf-file");
 const pdfStatus = document.querySelector("#pdf-status");
 const cardTotalInput = document.querySelector("#card-total");
 const difficultyInput = document.querySelector("#difficulty");
+const quizForm = document.querySelector("#quiz-form");
+const quizSubjectInput = document.querySelector("#quiz-subject");
+const quizTopicInput = document.querySelector("#quiz-topic");
+const quizNotesInput = document.querySelector("#quiz-notes");
+const quizTotalInput = document.querySelector("#quiz-total");
+const quizDifficultyInput = document.querySelector("#quiz-difficulty");
+const generateQuizButton = document.querySelector("#generate-quiz-button");
+const loadQuizDemoButton = document.querySelector("#load-quiz-demo");
 const summarySubjectInput = document.querySelector("#summary-subject");
 const summaryTopicInput = document.querySelector("#summary-topic");
 const summaryNotesInput = document.querySelector("#summary-notes");
@@ -23,6 +31,9 @@ const notesProgressBar = document.querySelector("#notes-progress-bar");
 const cardsGrid = document.querySelector("#cards-grid");
 const emptyState = document.querySelector("#empty-state");
 const cardCount = document.querySelector("#card-count");
+const quizCount = document.querySelector("#quiz-count");
+const quizProgressLabel = document.querySelector("#quiz-progress-label");
+const quizScoreLabel = document.querySelector("#quiz-score-label");
 const generationMode = document.querySelector("#generation-mode");
 const generationStatus = document.querySelector("#generation-status");
 const statusMessage = document.querySelector("#status-message");
@@ -34,6 +45,16 @@ const summaryEmptyState = document.querySelector("#summary-empty-state");
 const summaryResult = document.querySelector("#summary-result");
 const summaryResultTitle = document.querySelector("#summary-result-title");
 const summaryResultContent = document.querySelector("#summary-result-content");
+const quizStatusMessage = document.querySelector("#quiz-status-message");
+const quizEmptyState = document.querySelector("#quiz-empty-state");
+const quizPlayer = document.querySelector("#quiz-player");
+const quizStep = document.querySelector("#quiz-step");
+const quizLiveScore = document.querySelector("#quiz-live-score");
+const quizQuestion = document.querySelector("#quiz-question");
+const quizOptions = document.querySelector("#quiz-options");
+const quizFeedback = document.querySelector("#quiz-feedback");
+const nextQuestionButton = document.querySelector("#next-question-button");
+const restartQuizButton = document.querySelector("#restart-quiz-button");
 const template = document.querySelector("#card-template");
 
 const subjectSuggestions = {
@@ -76,6 +97,10 @@ let currentCards = [];
 let isPdfProcessing = false;
 let conceptCount = 1;
 let notesProgressInterval = null;
+let currentQuiz = [];
+let currentQuizIndex = 0;
+let currentQuizScore = 0;
+let currentQuizAnswered = false;
 
 const PDF_TEXT_LIMIT = 18000;
 const MIN_STUDY_NOTE_WORDS = 500;
@@ -198,6 +223,12 @@ function updateSummaryUiState({ message, loading = false }) {
   summaryStatusMessage.textContent = message;
   generateSummaryButton.disabled = loading;
   generateSummaryButton.textContent = loading ? "Generando..." : "Generar apuntes";
+}
+
+function updateQuizUiState({ message, loading = false }) {
+  quizStatusMessage.textContent = message;
+  generateQuizButton.disabled = loading;
+  generateQuizButton.textContent = loading ? "Generando..." : "Generar quiz";
 }
 
 function setNotesProgress(value) {
@@ -405,6 +436,43 @@ async function requestAiSummary(payload) {
   }
 }
 
+async function requestAiQuiz(payload) {
+  try {
+    const response = await fetch("/api/flashcards", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        ...payload,
+        tool: "quiz"
+      })
+    });
+
+    if (!response.ok) {
+      const data = await response.json().catch(() => null);
+      const statusHint =
+        response.status === 404
+          ? "La ruta de backend no existe en este entorno. Abre la app desde Vercel o desde un servidor con backend."
+          : "";
+
+      throw new Error(
+        data?.error || statusHint || `No fue posible generar el quiz con IA. Codigo HTTP: ${response.status}.`
+      );
+    }
+
+    return response.json();
+  } catch (error) {
+    if (error instanceof TypeError) {
+      throw new Error(
+        "No se pudo conectar con el backend de IA. Si abriste la app localmente sin Vercel o sin servidor API, la IA no puede responder."
+      );
+    }
+
+    throw error;
+  }
+}
+
 function addConceptInput(value = "") {
   conceptCount += 1;
   const conceptRow = document.createElement("div");
@@ -419,6 +487,155 @@ function addConceptInput(value = "") {
 
   conceptRow.appendChild(input);
   keyConceptsList.appendChild(conceptRow);
+}
+
+function normalizeQuizResponse(result, requestData) {
+  if (!result || !Array.isArray(result.questions)) {
+    throw new Error("La respuesta de la IA no vino en formato de quiz.");
+  }
+
+  const questions = result.questions
+    .filter(
+      (item) =>
+        item &&
+        typeof item.question === "string" &&
+        Array.isArray(item.options) &&
+        item.options.length === 4 &&
+        Number.isInteger(item.correctIndex) &&
+        item.correctIndex >= 0 &&
+        item.correctIndex < 4
+    )
+    .map((item) => ({
+      question: item.question.trim(),
+      options: item.options.map((option) => String(option).trim()),
+      correctIndex: item.correctIndex,
+      explanation:
+        typeof item.explanation === "string" && item.explanation.trim()
+          ? item.explanation.trim()
+          : "Repasa este concepto y vuelve a intentarlo."
+    }))
+    .filter((item) => item.question && item.options.every(Boolean));
+
+  if (questions.length === 0) {
+    throw new Error("La IA no devolvio preguntas validas para el quiz.");
+  }
+
+  return {
+    title: result.quizTitle || `${requestData.topic} en ${requestData.subject}`,
+    questions,
+    model: result.model
+  };
+}
+
+function buildFallbackQuiz({ subject, topic, notes, quizTotal }) {
+  const ideas = splitNotesIntoIdeas(notes).slice(0, quizTotal);
+
+  const questionsFromNotes = ideas.map((idea, index) => ({
+    question: `Que deberias recordar sobre ${topic || subject}?`,
+    options: [
+      idea,
+      `Una idea no relacionada con ${topic || subject}.`,
+      `Un concepto opuesto al tema principal.`,
+      `Un dato inventado sin relacion con ${subject}.`
+    ],
+    correctIndex: 0,
+    explanation: `La respuesta correcta se basa directamente en el contenido entregado por el estudiante.`
+  }));
+
+  const defaultQuestions = starterQuestions.slice(0, quizTotal).map((question, index) => ({
+    question: question.replaceAll("{subject}", subject).replaceAll("{topic}", topic || "este tema"),
+    options: [
+      `La opcion mas consistente con ${topic || subject} dentro de ${subject}.`,
+      `Una opcion incompleta sobre ${topic || subject}.`,
+      `Una opcion fuera del contexto de ${subject}.`,
+      `Una opcion incorrecta que mezcla conceptos no relacionados.`
+    ],
+    correctIndex: 0,
+    explanation: `Repasa las ideas centrales de ${topic || subject} para reconocer la opcion correcta con mas seguridad.`
+  }));
+
+  return {
+    title: `${topic || "Tema principal"} en ${subject}`,
+    questions: (questionsFromNotes.length > 0 ? questionsFromNotes : defaultQuestions).slice(0, quizTotal)
+  };
+}
+
+function updateQuizScoreboard() {
+  quizCount.textContent = String(currentQuiz.length);
+  quizScoreLabel.textContent = `${currentQuizScore}/${currentQuiz.length || 0}`;
+  quizLiveScore.textContent = `Puntaje: ${currentQuizScore}`;
+  quizProgressLabel.textContent =
+    currentQuiz.length > 0 ? `${Math.min(currentQuizIndex + 1, currentQuiz.length)}/${currentQuiz.length}` : "Sin iniciar";
+}
+
+function renderQuizQuestion() {
+  if (currentQuiz.length === 0) {
+    return;
+  }
+
+  const questionData = currentQuiz[currentQuizIndex];
+  quizStep.textContent = `Pregunta ${currentQuizIndex + 1} de ${currentQuiz.length}`;
+  quizQuestion.textContent = questionData.question;
+  quizOptions.innerHTML = "";
+  quizFeedback.hidden = true;
+  quizFeedback.textContent = "";
+  nextQuestionButton.hidden = true;
+  restartQuizButton.hidden = true;
+  currentQuizAnswered = false;
+
+  questionData.options.forEach((option, index) => {
+    const optionButton = document.createElement("button");
+    optionButton.type = "button";
+    optionButton.className = "quiz-option";
+    optionButton.textContent = option;
+
+    optionButton.addEventListener("click", () => {
+      if (currentQuizAnswered) {
+        return;
+      }
+
+      currentQuizAnswered = true;
+      const isCorrect = index === questionData.correctIndex;
+
+      Array.from(quizOptions.children).forEach((buttonNode, buttonIndex) => {
+        buttonNode.disabled = true;
+        buttonNode.classList.toggle("is-correct", buttonIndex === questionData.correctIndex);
+        buttonNode.classList.toggle(
+          "is-incorrect",
+          buttonIndex === index && buttonIndex !== questionData.correctIndex
+        );
+      });
+
+      if (isCorrect) {
+        currentQuizScore += 1;
+      }
+
+      updateQuizScoreboard();
+      quizFeedback.hidden = false;
+      quizFeedback.textContent = isCorrect
+        ? `Correcto. ${questionData.explanation}`
+        : `Respuesta incorrecta. ${questionData.explanation}`;
+
+      if (currentQuizIndex < currentQuiz.length - 1) {
+        nextQuestionButton.hidden = false;
+      } else {
+        restartQuizButton.hidden = false;
+        quizProgressLabel.textContent = "Completado";
+      }
+    });
+
+    quizOptions.appendChild(optionButton);
+  });
+}
+
+function startQuiz(quizData) {
+  currentQuiz = quizData.questions;
+  currentQuizIndex = 0;
+  currentQuizScore = 0;
+  quizEmptyState.hidden = true;
+  quizPlayer.hidden = false;
+  updateQuizScoreboard();
+  renderQuizQuestion();
 }
 
 function getKeyConcepts() {
@@ -770,4 +987,74 @@ La Patria Vieja inicio con la Primera Junta Nacional de Gobierno en 1810.
 Luego ocurrio la Reconquista espanola, periodo en que los realistas recuperaron el control.
 Mas tarde comenzo la Patria Nueva, liderada por figuras como Bernardo O'Higgins y Jose de San Martin.
 La independencia se consolido con victorias militares y con la organizacion de un nuevo Estado.`;
+});
+
+nextQuestionButton.addEventListener("click", () => {
+  if (currentQuizIndex < currentQuiz.length - 1) {
+    currentQuizIndex += 1;
+    updateQuizScoreboard();
+    renderQuizQuestion();
+  }
+});
+
+restartQuizButton.addEventListener("click", () => {
+  if (currentQuiz.length > 0) {
+    currentQuizIndex = 0;
+    currentQuizScore = 0;
+    updateQuizScoreboard();
+    renderQuizQuestion();
+  }
+});
+
+quizForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  const subject = quizSubjectInput.value.trim();
+  const topic = quizTopicInput.value.trim();
+  const notes = quizNotesInput.value.trim();
+  const quizTotal = Number(quizTotalInput.value);
+  const difficulty = quizDifficultyInput.value;
+  const requestData = { subject, topic, notes, quizTotal, difficulty };
+
+  if (!subject) {
+    quizSubjectInput.focus();
+    return;
+  }
+
+  if (!topic) {
+    quizTopicInput.focus();
+    return;
+  }
+
+  updateQuizUiState({
+    message: "La app esta creando un quiz con preguntas de opcion multiple.",
+    loading: true
+  });
+
+  try {
+    const result = await requestAiQuiz(requestData);
+    const normalizedQuiz = normalizeQuizResponse(result, requestData);
+
+    startQuiz(normalizedQuiz);
+    updateQuizUiState({
+      message: `El quiz fue generado con IA y ya esta listo para practicar. Modelo: ${result.model || "Gemini"}.`
+    });
+  } catch (error) {
+    startQuiz(buildFallbackQuiz(requestData));
+    updateQuizUiState({
+      message: `La IA no respondio correctamente. Se genero un quiz local. Detalle: ${error instanceof Error ? error.message : "Error desconocido."}`
+    });
+  }
+});
+
+loadQuizDemoButton.addEventListener("click", () => {
+  quizSubjectInput.value = "Psicologia";
+  quizTopicInput.value = "Psicoanalisis";
+  quizNotesInput.value = `Sigmund Freud fue el fundador del psicoanalisis.
+El inconsciente es uno de los conceptos centrales de esta corriente.
+La primera topica distingue consciente, preconsciente e inconsciente.
+La segunda topica distingue ello, yo y superyo.
+Los mecanismos de defensa ayudan a manejar conflictos internos y ansiedad.`;
+  quizTotalInput.value = "5";
+  quizDifficultyInput.value = "intermedio";
 });
