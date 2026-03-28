@@ -59,7 +59,6 @@ const quizSummary = document.querySelector("#quiz-summary");
 const quizSummaryTitle = document.querySelector("#quiz-summary-title");
 const quizSummaryScore = document.querySelector("#quiz-summary-score");
 const quizSummaryList = document.querySelector("#quiz-summary-list");
-const retryIncorrectButton = document.querySelector("#retry-incorrect-button");
 const restartSameQuizButton = document.querySelector("#restart-same-quiz-button");
 const newQuizButton = document.querySelector("#new-quiz-button");
 const advanceQuizButton = document.querySelector("#advance-quiz-button");
@@ -113,6 +112,7 @@ let currentQuizAnswered = false;
 let currentQuizResults = [];
 let quizCurrentMode = "full";
 let lastQuizRequestData = null;
+let quizTransitionTimeout = null;
 
 const PDF_TEXT_LIMIT = 18000;
 const MIN_STUDY_NOTE_WORDS = 500;
@@ -608,10 +608,36 @@ function updateQuizScoreboard() {
     currentQuiz.length > 0 ? `${Math.min(currentQuizIndex + 1, currentQuiz.length)}/${currentQuiz.length}` : "Sin iniciar";
 }
 
+function createEmptyQuizResult() {
+  return {
+    attempts: 0,
+    selectedIndexes: [],
+    finalCorrect: false,
+    correctedInRetry: false
+  };
+}
+
+function finishQuizRound() {
+  window.clearTimeout(quizTransitionTimeout);
+
+  if (quizCurrentMode === "full") {
+    const hasIncorrectAnswers = currentQuizResults.some((result) => !result?.finalCorrect);
+
+    if (hasIncorrectAnswers) {
+      prepareRetryIncorrectQuestions();
+      return;
+    }
+  }
+
+  renderQuizSummary();
+}
+
 function renderQuizQuestion() {
   if (currentQuiz.length === 0) {
     return;
   }
+
+  window.clearTimeout(quizTransitionTimeout);
 
   const questionData = currentQuiz[currentQuizIndex];
   quizStep.textContent = `Pregunta ${currentQuizIndex + 1} de ${currentQuiz.length}`;
@@ -636,42 +662,56 @@ function renderQuizQuestion() {
 
       currentQuizAnswered = true;
       const isCorrect = index === questionData.correctIndex;
+      const resultIndex = fullQuiz.findIndex((item) => item.question === questionData.question);
+      const resultState =
+        resultIndex >= 0
+          ? currentQuizResults[resultIndex] || createEmptyQuizResult()
+          : createEmptyQuizResult();
 
       Array.from(quizOptions.children).forEach((buttonNode, buttonIndex) => {
         buttonNode.disabled = true;
-        buttonNode.classList.toggle("is-correct", buttonIndex === questionData.correctIndex);
-        buttonNode.classList.toggle(
-          "is-incorrect",
-          buttonIndex === index && buttonIndex !== questionData.correctIndex
-        );
+        const revealCorrectAnswer = isCorrect || quizCurrentMode === "retry";
+        buttonNode.classList.toggle("is-correct", revealCorrectAnswer && buttonIndex === questionData.correctIndex);
+        buttonNode.classList.toggle("is-incorrect", buttonIndex === index && !isCorrect);
       });
 
       if (isCorrect) {
         currentQuizScore += 1;
       }
 
-      const resultIndex = fullQuiz.findIndex((item) => item.question === questionData.question);
       if (resultIndex >= 0) {
-        currentQuizResults[resultIndex] = {
-          selectedIndex: index,
-          isCorrect,
-          correctedInRetry: quizCurrentMode === "retry" && isCorrect
-        };
+        resultState.attempts += 1;
+        resultState.selectedIndexes.push(index);
+
+        if (isCorrect) {
+          resultState.finalCorrect = true;
+          resultState.correctedInRetry = quizCurrentMode === "retry" && resultState.attempts > 1;
+        } else if (quizCurrentMode === "retry") {
+          resultState.finalCorrect = false;
+        }
+
+        currentQuizResults[resultIndex] = resultState;
       }
 
       updateQuizScoreboard();
       quizFeedback.hidden = false;
-      quizFeedback.textContent = isCorrect
-        ? `Correcto. ${questionData.explanation}`
-        : `Respuesta incorrecta. ${questionData.explanation}`;
+      if (isCorrect) {
+        quizFeedback.textContent = `Correcto. ${questionData.explanation}`;
+      } else if (quizCurrentMode === "full") {
+        quizFeedback.textContent =
+          "Respuesta incorrecta. Esta pregunta volvera a aparecer al final para que la intentes una segunda vez.";
+      } else {
+        quizFeedback.textContent = `Respuesta incorrecta. ${questionData.explanation}`;
+      }
 
       if (currentQuizIndex < currentQuiz.length - 1) {
         nextQuestionButton.hidden = false;
         nextQuestionButton.textContent = "Siguiente pregunta";
       } else {
-        restartQuizButton.hidden = false;
-        restartQuizButton.textContent = "Ver resultados";
-        quizProgressLabel.textContent = quizCurrentMode === "retry" ? "Reintento completado" : "Completado";
+        quizProgressLabel.textContent = quizCurrentMode === "retry" ? "Reintento completado" : "Primera ronda completada";
+        quizTransitionTimeout = window.setTimeout(() => {
+          finishQuizRound();
+        }, 1200);
       }
     });
 
@@ -684,8 +724,9 @@ function startQuiz(quizData) {
   currentQuiz = fullQuiz;
   currentQuizIndex = 0;
   currentQuizScore = 0;
-  currentQuizResults = fullQuiz.map(() => null);
+  currentQuizResults = fullQuiz.map(() => createEmptyQuizResult());
   quizCurrentMode = "full";
+  window.clearTimeout(quizTransitionTimeout);
   quizEmptyState.hidden = true;
   quizPlayer.hidden = false;
   quizSummary.hidden = true;
@@ -695,43 +736,58 @@ function startQuiz(quizData) {
 
 function renderQuizSummary() {
   const totalQuestions = fullQuiz.length;
-  const correctAnswers = currentQuizResults.filter((result) => result?.isCorrect).length;
-  const incorrectIndexes = currentQuizResults
-    .map((result, index) => (!result?.isCorrect ? index : -1))
-    .filter((index) => index >= 0);
+  const correctAnswers = currentQuizResults.filter((result) => result?.finalCorrect).length;
+  currentQuizScore = correctAnswers;
+  updateQuizScoreboard();
 
   quizPlayer.hidden = true;
   quizSummary.hidden = false;
   quizSummaryTitle.textContent =
-    incorrectIndexes.length === 0
+    correctAnswers === totalQuestions
       ? "Excelente trabajo, completaste el quiz"
-      : "Resumen del quiz y preguntas para reforzar";
+      : "Resumen final del quiz";
   quizSummaryScore.textContent = `${correctAnswers}/${totalQuestions}`;
   quizSummaryList.innerHTML = "";
 
   fullQuiz.forEach((question, index) => {
     const result = currentQuizResults[index];
+    const attempts = result?.attempts || 0;
+    const finalCorrect = Boolean(result?.finalCorrect);
     const itemNode = document.createElement("article");
-    itemNode.className = `quiz-summary-item ${result?.isCorrect ? "is-correct" : "is-incorrect"}`;
+    itemNode.className = `quiz-summary-item ${finalCorrect ? "is-correct" : "is-incorrect"}`;
 
     const titleNode = document.createElement("h4");
     titleNode.textContent = `${index + 1}. ${question.question}`;
 
     const statusNode = document.createElement("p");
-    statusNode.textContent = result?.isCorrect
-      ? result?.correctedInRetry
-        ? "Resultado: correcta en repaso"
-        : "Resultado: correcta"
-      : "Resultado: incorrecta";
+    if (finalCorrect && attempts <= 1) {
+      statusNode.textContent = "Resultado: correcta en 1 intento.";
+    } else if (finalCorrect) {
+      statusNode.textContent = `Resultado: correcta en ${attempts} intentos.`;
+    } else if (attempts > 1) {
+      statusNode.textContent = `Resultado: incorrecta tras ${attempts} intentos.`;
+    } else {
+      statusNode.textContent = "Resultado: incorrecta.";
+    }
 
     const answerNode = document.createElement("p");
     answerNode.textContent = `Respuesta correcta: ${question.options[question.correctIndex]}`;
 
-    itemNode.append(titleNode, statusNode, answerNode);
+    const attemptNode = document.createElement("p");
+    attemptNode.textContent = `Intentos usados: ${attempts || 0}`;
+
+    const selectedIndexes = Array.isArray(result?.selectedIndexes) ? result.selectedIndexes : [];
+    const lastSelectedIndex = selectedIndexes.length > 0 ? selectedIndexes[selectedIndexes.length - 1] : -1;
+    const userAnswerNode = document.createElement("p");
+    userAnswerNode.textContent =
+      lastSelectedIndex >= 0
+        ? `Tu respuesta final: ${question.options[lastSelectedIndex]}`
+        : "Tu respuesta final: sin respuesta registrada";
+
+    itemNode.append(titleNode, statusNode, attemptNode, userAnswerNode, answerNode);
     quizSummaryList.appendChild(itemNode);
   });
 
-  retryIncorrectButton.hidden = incorrectIndexes.length === 0;
   const nextDifficulty = getNextQuizDifficulty(lastQuizRequestData?.difficulty || "");
   if (nextDifficulty) {
     advanceQuizButton.hidden = false;
@@ -742,7 +798,7 @@ function renderQuizSummary() {
 }
 
 function prepareRetryIncorrectQuestions() {
-  const incorrectQuestions = fullQuiz.filter((_, index) => !currentQuizResults[index]?.isCorrect);
+  const incorrectQuestions = fullQuiz.filter((_, index) => !currentQuizResults[index]?.finalCorrect);
 
   if (incorrectQuestions.length === 0) {
     renderQuizSummary();
@@ -755,6 +811,9 @@ function prepareRetryIncorrectQuestions() {
   quizCurrentMode = "retry";
   quizSummary.hidden = true;
   quizPlayer.hidden = false;
+  updateQuizUiState({
+    message: "Ahora vas a responder automaticamente las preguntas que tuviste incorrectas en el primer intento."
+  });
   updateQuizScoreboard();
   renderQuizQuestion();
 }
@@ -1115,17 +1174,11 @@ nextQuestionButton.addEventListener("click", () => {
     currentQuizIndex += 1;
     updateQuizScoreboard();
     renderQuizQuestion();
-  } else {
-    renderQuizSummary();
   }
 });
 
 restartQuizButton.addEventListener("click", () => {
-  renderQuizSummary();
-});
-
-retryIncorrectButton.addEventListener("click", () => {
-  prepareRetryIncorrectQuestions();
+  finishQuizRound();
 });
 
 restartSameQuizButton.addEventListener("click", () => {
