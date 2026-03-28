@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Campus IA | Estudia con tarjetas inteligentes</title>
-    <link rel="stylesheet" href="./styles.css?v=20260327b" />
+    <link rel="stylesheet" href="./styles.css?v=20260327c" />
   </head>
   <body>
     <main class="app-shell">
@@ -423,6 +423,12 @@
               <strong id="quiz-live-score">Puntaje: 0</strong>
             </div>
 
+            <div id="quiz-retry-banner" class="quiz-retry-banner" hidden>
+              <p class="eyebrow">Repaso</p>
+              <h3>Reintenta tus intentos fallidos</h3>
+              <p>La alternativa que elegiste mal antes aparece marcada en rojo para que no la repitas por accidente.</p>
+            </div>
+
             <article class="quiz-card">
               <h3 id="quiz-question" class="quiz-question"></h3>
               <div id="quiz-options" class="quiz-options"></div>
@@ -481,6 +487,6 @@
     </template>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <script src="./app.js?v=20260327b"></script>
+    <script src="./app.js?v=20260327c"></script>
   </body>
 </html>

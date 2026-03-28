@@ -50,6 +50,7 @@ const quizEmptyState = document.querySelector("#quiz-empty-state");
 const quizPlayer = document.querySelector("#quiz-player");
 const quizStep = document.querySelector("#quiz-step");
 const quizLiveScore = document.querySelector("#quiz-live-score");
+const quizRetryBanner = document.querySelector("#quiz-retry-banner");
 const quizQuestion = document.querySelector("#quiz-question");
 const quizOptions = document.querySelector("#quiz-options");
 const quizFeedback = document.querySelector("#quiz-feedback");
@@ -640,7 +641,14 @@ function renderQuizQuestion() {
   window.clearTimeout(quizTransitionTimeout);
 
   const questionData = currentQuiz[currentQuizIndex];
+  const questionResultIndex = fullQuiz.findIndex((item) => item.question === questionData.question);
+  const questionResultState =
+    questionResultIndex >= 0
+      ? currentQuizResults[questionResultIndex] || createEmptyQuizResult()
+      : createEmptyQuizResult();
+
   quizStep.textContent = `Pregunta ${currentQuizIndex + 1} de ${currentQuiz.length}`;
+  quizRetryBanner.hidden = quizCurrentMode !== "retry";
   quizQuestion.textContent = questionData.question;
   quizOptions.innerHTML = "";
   quizFeedback.hidden = true;
@@ -655,6 +663,17 @@ function renderQuizQuestion() {
     optionButton.className = "quiz-option";
     optionButton.textContent = option;
 
+    const previousWrongAnswer =
+      quizCurrentMode === "retry" &&
+      Array.isArray(questionResultState.selectedIndexes) &&
+      questionResultState.selectedIndexes.length > 0
+        ? questionResultState.selectedIndexes[0]
+        : -1;
+
+    if (previousWrongAnswer === index) {
+      optionButton.classList.add("is-previous-incorrect");
+    }
+
     optionButton.addEventListener("click", () => {
       if (currentQuizAnswered) {
         return;
@@ -662,10 +681,9 @@ function renderQuizQuestion() {
 
       currentQuizAnswered = true;
       const isCorrect = index === questionData.correctIndex;
-      const resultIndex = fullQuiz.findIndex((item) => item.question === questionData.question);
       const resultState =
-        resultIndex >= 0
-          ? currentQuizResults[resultIndex] || createEmptyQuizResult()
+        questionResultIndex >= 0
+          ? currentQuizResults[questionResultIndex] || createEmptyQuizResult()
           : createEmptyQuizResult();
 
       Array.from(quizOptions.children).forEach((buttonNode, buttonIndex) => {
@@ -679,7 +697,7 @@ function renderQuizQuestion() {
         currentQuizScore += 1;
       }
 
-      if (resultIndex >= 0) {
+      if (questionResultIndex >= 0) {
         resultState.attempts += 1;
         resultState.selectedIndexes.push(index);
 
@@ -690,7 +708,7 @@ function renderQuizQuestion() {
           resultState.finalCorrect = false;
         }
 
-        currentQuizResults[resultIndex] = resultState;
+        currentQuizResults[questionResultIndex] = resultState;
       }
 
       updateQuizScoreboard();
