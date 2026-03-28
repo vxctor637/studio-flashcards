@@ -19,6 +19,10 @@
   box-sizing: border-box;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 html {
   scroll-behavior: smooth;
 }
@@ -76,7 +80,7 @@ body::before {
 .hero {
   grid-column: 1 / -1;
   padding: 28px;
-  overflow: hidden;
+  overflow: visible;
   background:
     linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(239, 246, 255, 0.9)),
     var(--surface-strong);
