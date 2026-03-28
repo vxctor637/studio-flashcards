@@ -600,6 +600,69 @@ textarea {
   line-height: 1.65;
 }
 
+.quiz-summary {
+  margin-top: 22px;
+  display: grid;
+  gap: 18px;
+  padding: 24px;
+  border-radius: 24px;
+  background:
+    linear-gradient(180deg, rgba(239, 246, 255, 0.88), rgba(255, 255, 255, 0.98)),
+    var(--surface);
+  border: 1px solid rgba(47, 109, 246, 0.14);
+  box-shadow: var(--shadow-soft);
+}
+
+.quiz-summary-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+}
+
+.quiz-summary-header h3 {
+  margin: 0;
+  font-size: 1.45rem;
+}
+
+.quiz-summary-score {
+  font-size: 1.3rem;
+}
+
+.quiz-summary-list {
+  display: grid;
+  gap: 14px;
+}
+
+.quiz-summary-item {
+  padding: 18px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(102, 117, 143, 0.14);
+}
+
+.quiz-summary-item.is-correct {
+  border-color: rgba(49, 195, 177, 0.32);
+}
+
+.quiz-summary-item.is-incorrect {
+  border-color: rgba(220, 80, 80, 0.26);
+}
+
+.quiz-summary-item h4,
+.quiz-summary-item p {
+  margin: 0;
+}
+
+.quiz-summary-item h4 {
+  margin-bottom: 10px;
+  font-size: 1rem;
+}
+
+.quiz-summary-item p + p {
+  margin-top: 8px;
+}
+
 .notes-progress {
   margin-top: 18px;
   width: 100%;

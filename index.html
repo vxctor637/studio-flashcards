@@ -439,6 +439,31 @@
               </button>
             </div>
           </section>
+
+          <section id="quiz-summary" class="quiz-summary" hidden>
+            <div class="quiz-summary-header">
+              <div>
+                <p class="eyebrow">Resultado</p>
+                <h3 id="quiz-summary-title">Resumen del quiz</h3>
+              </div>
+              <strong id="quiz-summary-score" class="quiz-summary-score">0/0</strong>
+            </div>
+
+            <div id="quiz-summary-list" class="quiz-summary-list"></div>
+
+            <div class="quiz-actions">
+              <button type="button" id="retry-incorrect-button" class="secondary" hidden>
+                Reintentar incorrectas
+              </button>
+              <button type="button" id="restart-same-quiz-button" class="secondary">
+                Reiniciar mismo quiz
+              </button>
+              <button type="button" id="new-quiz-button" class="secondary">
+                Generar nuevo quiz
+              </button>
+              <button type="button" id="advance-quiz-button" class="secondary" hidden></button>
+            </div>
+          </section>
         </section>
       </section>
     </main>

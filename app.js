@@ -55,6 +55,14 @@ const quizOptions = document.querySelector("#quiz-options");
 const quizFeedback = document.querySelector("#quiz-feedback");
 const nextQuestionButton = document.querySelector("#next-question-button");
 const restartQuizButton = document.querySelector("#restart-quiz-button");
+const quizSummary = document.querySelector("#quiz-summary");
+const quizSummaryTitle = document.querySelector("#quiz-summary-title");
+const quizSummaryScore = document.querySelector("#quiz-summary-score");
+const quizSummaryList = document.querySelector("#quiz-summary-list");
+const retryIncorrectButton = document.querySelector("#retry-incorrect-button");
+const restartSameQuizButton = document.querySelector("#restart-same-quiz-button");
+const newQuizButton = document.querySelector("#new-quiz-button");
+const advanceQuizButton = document.querySelector("#advance-quiz-button");
 const template = document.querySelector("#card-template");
 
 const subjectSuggestions = {
@@ -98,9 +106,13 @@ let isPdfProcessing = false;
 let conceptCount = 1;
 let notesProgressInterval = null;
 let currentQuiz = [];
+let fullQuiz = [];
 let currentQuizIndex = 0;
 let currentQuizScore = 0;
 let currentQuizAnswered = false;
+let currentQuizResults = [];
+let quizCurrentMode = "full";
+let lastQuizRequestData = null;
 
 const PDF_TEXT_LIMIT = 18000;
 const MIN_STUDY_NOTE_WORDS = 500;
@@ -560,6 +572,34 @@ function buildFallbackQuiz({ subject, topic, notes, quizTotal }) {
   };
 }
 
+function getNextQuizDifficulty(level) {
+  if (level === "basico") {
+    return "intermedio";
+  }
+
+  if (level === "intermedio") {
+    return "avanzado";
+  }
+
+  return "";
+}
+
+function getDifficultyLabel(level) {
+  if (level === "basico") {
+    return "Basico";
+  }
+
+  if (level === "intermedio") {
+    return "Intermedio";
+  }
+
+  if (level === "avanzado") {
+    return "Avanzado";
+  }
+
+  return level;
+}
+
 function updateQuizScoreboard() {
   quizCount.textContent = String(currentQuiz.length);
   quizScoreLabel.textContent = `${currentQuizScore}/${currentQuiz.length || 0}`;
@@ -610,6 +650,15 @@ function renderQuizQuestion() {
         currentQuizScore += 1;
       }
 
+      const resultIndex = fullQuiz.findIndex((item) => item.question === questionData.question);
+      if (resultIndex >= 0) {
+        currentQuizResults[resultIndex] = {
+          selectedIndex: index,
+          isCorrect,
+          correctedInRetry: quizCurrentMode === "retry" && isCorrect
+        };
+      }
+
       updateQuizScoreboard();
       quizFeedback.hidden = false;
       quizFeedback.textContent = isCorrect
@@ -618,9 +667,11 @@ function renderQuizQuestion() {
 
       if (currentQuizIndex < currentQuiz.length - 1) {
         nextQuestionButton.hidden = false;
+        nextQuestionButton.textContent = "Siguiente pregunta";
       } else {
         restartQuizButton.hidden = false;
-        quizProgressLabel.textContent = "Completado";
+        restartQuizButton.textContent = "Ver resultados";
+        quizProgressLabel.textContent = quizCurrentMode === "retry" ? "Reintento completado" : "Completado";
       }
     });
 
@@ -629,10 +680,80 @@ function renderQuizQuestion() {
 }
 
 function startQuiz(quizData) {
-  currentQuiz = quizData.questions;
+  fullQuiz = quizData.questions.map((question) => ({ ...question }));
+  currentQuiz = fullQuiz;
   currentQuizIndex = 0;
   currentQuizScore = 0;
+  currentQuizResults = fullQuiz.map(() => null);
+  quizCurrentMode = "full";
   quizEmptyState.hidden = true;
+  quizPlayer.hidden = false;
+  quizSummary.hidden = true;
+  updateQuizScoreboard();
+  renderQuizQuestion();
+}
+
+function renderQuizSummary() {
+  const totalQuestions = fullQuiz.length;
+  const correctAnswers = currentQuizResults.filter((result) => result?.isCorrect).length;
+  const incorrectIndexes = currentQuizResults
+    .map((result, index) => (!result?.isCorrect ? index : -1))
+    .filter((index) => index >= 0);
+
+  quizPlayer.hidden = true;
+  quizSummary.hidden = false;
+  quizSummaryTitle.textContent =
+    incorrectIndexes.length === 0
+      ? "Excelente trabajo, completaste el quiz"
+      : "Resumen del quiz y preguntas para reforzar";
+  quizSummaryScore.textContent = `${correctAnswers}/${totalQuestions}`;
+  quizSummaryList.innerHTML = "";
+
+  fullQuiz.forEach((question, index) => {
+    const result = currentQuizResults[index];
+    const itemNode = document.createElement("article");
+    itemNode.className = `quiz-summary-item ${result?.isCorrect ? "is-correct" : "is-incorrect"}`;
+
+    const titleNode = document.createElement("h4");
+    titleNode.textContent = `${index + 1}. ${question.question}`;
+
+    const statusNode = document.createElement("p");
+    statusNode.textContent = result?.isCorrect
+      ? result?.correctedInRetry
+        ? "Resultado: correcta en repaso"
+        : "Resultado: correcta"
+      : "Resultado: incorrecta";
+
+    const answerNode = document.createElement("p");
+    answerNode.textContent = `Respuesta correcta: ${question.options[question.correctIndex]}`;
+
+    itemNode.append(titleNode, statusNode, answerNode);
+    quizSummaryList.appendChild(itemNode);
+  });
+
+  retryIncorrectButton.hidden = incorrectIndexes.length === 0;
+  const nextDifficulty = getNextQuizDifficulty(lastQuizRequestData?.difficulty || "");
+  if (nextDifficulty) {
+    advanceQuizButton.hidden = false;
+    advanceQuizButton.textContent = `Generar nuevo quiz en nivel ${getDifficultyLabel(nextDifficulty)}`;
+  } else {
+    advanceQuizButton.hidden = true;
+  }
+}
+
+function prepareRetryIncorrectQuestions() {
+  const incorrectQuestions = fullQuiz.filter((_, index) => !currentQuizResults[index]?.isCorrect);
+
+  if (incorrectQuestions.length === 0) {
+    renderQuizSummary();
+    return;
+  }
+
+  currentQuiz = incorrectQuestions;
+  currentQuizIndex = 0;
+  currentQuizScore = 0;
+  quizCurrentMode = "retry";
+  quizSummary.hidden = true;
   quizPlayer.hidden = false;
   updateQuizScoreboard();
   renderQuizQuestion();
@@ -994,16 +1115,46 @@ nextQuestionButton.addEventListener("click", () => {
     currentQuizIndex += 1;
     updateQuizScoreboard();
     renderQuizQuestion();
+  } else {
+    renderQuizSummary();
   }
 });
 
 restartQuizButton.addEventListener("click", () => {
-  if (currentQuiz.length > 0) {
-    currentQuizIndex = 0;
-    currentQuizScore = 0;
-    updateQuizScoreboard();
-    renderQuizQuestion();
+  renderQuizSummary();
+});
+
+retryIncorrectButton.addEventListener("click", () => {
+  prepareRetryIncorrectQuestions();
+});
+
+restartSameQuizButton.addEventListener("click", () => {
+  if (fullQuiz.length > 0) {
+    startQuiz({
+      title: `${lastQuizRequestData?.topic || "Tema principal"} en ${lastQuizRequestData?.subject || ""}`,
+      questions: fullQuiz
+    });
+    updateQuizUiState({
+      message: "El mismo quiz fue reiniciado para volver a practicar."
+    });
   }
+});
+
+newQuizButton.addEventListener("click", () => {
+  if (lastQuizRequestData) {
+    quizForm.requestSubmit();
+  }
+});
+
+advanceQuizButton.addEventListener("click", () => {
+  const nextDifficulty = getNextQuizDifficulty(lastQuizRequestData?.difficulty || "");
+
+  if (!nextDifficulty || !lastQuizRequestData) {
+    return;
+  }
+
+  quizDifficultyInput.value = nextDifficulty;
+  quizForm.requestSubmit();
 });
 
 quizForm.addEventListener("submit", async (event) => {
@@ -1015,6 +1166,7 @@ quizForm.addEventListener("submit", async (event) => {
   const quizTotal = Number(quizTotalInput.value);
   const difficulty = quizDifficultyInput.value;
   const requestData = { subject, topic, notes, quizTotal, difficulty };
+  lastQuizRequestData = requestData;
 
   if (!subject) {
     quizSubjectInput.focus();
