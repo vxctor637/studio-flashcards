@@ -292,14 +292,14 @@ function syncPomodoroUi() {
 
   pomodoroStudyDisplays.forEach((display) => {
     display.textContent =
-      pomodoroState.phase === "study"
+      pomodoroState.phase === "study" || pomodoroState.phase === "paused-study"
         ? formatPomodoroSeconds(pomodoroState.remainingSeconds)
         : `${pomodoroState.studyMinutes}m`;
   });
 
   pomodoroBreakDisplays.forEach((display) => {
     display.textContent =
-      pomodoroState.phase === "break"
+      pomodoroState.phase === "break" || pomodoroState.phase === "paused-break"
         ? formatPomodoroSeconds(pomodoroState.remainingSeconds)
         : `${pomodoroState.breakMinutes}m`;
   });
