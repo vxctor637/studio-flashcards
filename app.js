@@ -15,6 +15,7 @@ const pomodoroSplitDisplays = document.querySelectorAll("[data-pomodoro-split]")
 const pomodoroStudyInputs = document.querySelectorAll("[data-pomodoro-study-input]");
 const pomodoroBreakInputs = document.querySelectorAll("[data-pomodoro-break-input]");
 const pomodoroStartButtons = document.querySelectorAll("[data-pomodoro-start]");
+const pomodoroPauseButtons = document.querySelectorAll("[data-pomodoro-pause]");
 const pomodoroStopButtons = document.querySelectorAll("[data-pomodoro-stop]");
 const subjectInput = document.querySelector("#subject");
 const topicInput = document.querySelector("#topic");
@@ -236,11 +237,28 @@ function startBreakPomodoro() {
   startPomodoroCountdown("break", "ready-study", pomodoroState.breakMinutes * 60);
 }
 
-function getPomodoroStartButtonLabel() {
-  if (pomodoroState.phase === "study" || pomodoroState.phase === "break") {
-    return "Temporizador en curso";
+function pausePomodoro() {
+  if (pomodoroState.phase !== "study" && pomodoroState.phase !== "break") {
+    return;
   }
 
+  stopPomodoroInterval();
+  pomodoroState.phase = pomodoroState.phase === "study" ? "paused-study" : "paused-break";
+  syncPomodoroUi();
+}
+
+function resumePomodoro() {
+  if (pomodoroState.phase === "paused-study") {
+    startPomodoroCountdown("study", "ready-break", pomodoroState.remainingSeconds);
+    return;
+  }
+
+  if (pomodoroState.phase === "paused-break") {
+    startPomodoroCountdown("break", "ready-study", pomodoroState.remainingSeconds);
+  }
+}
+
+function getPomodoroStartButtonLabel() {
   if (pomodoroState.phase === "ready-break") {
     return "Comenzar break";
   }
@@ -302,8 +320,8 @@ function syncPomodoroUi() {
   });
 
   pomodoroToggleButtons.forEach((button) => {
-    button.classList.toggle("is-running-study", pomodoroState.phase === "study");
-    button.classList.toggle("is-running-break", pomodoroState.phase === "break");
+    button.classList.toggle("is-running-study", pomodoroState.phase === "study" || pomodoroState.phase === "paused-study");
+    button.classList.toggle("is-running-break", pomodoroState.phase === "break" || pomodoroState.phase === "paused-break");
     button.classList.toggle("is-ready", pomodoroState.phase === "ready-break" || pomodoroState.phase === "ready-study");
     button.classList.toggle("is-vibrating", pomodoroState.phase === "ready-break" || pomodoroState.phase === "ready-study");
 
@@ -318,7 +336,23 @@ function syncPomodoroUi() {
 
   pomodoroStartButtons.forEach((button) => {
     button.textContent = getPomodoroStartButtonLabel();
-    button.disabled = pomodoroState.phase === "study" || pomodoroState.phase === "break";
+    button.hidden =
+      pomodoroState.phase === "study" ||
+      pomodoroState.phase === "break" ||
+      pomodoroState.phase === "paused-study" ||
+      pomodoroState.phase === "paused-break";
+  });
+
+  pomodoroPauseButtons.forEach((button) => {
+    const isPaused = pomodoroState.phase === "paused-study" || pomodoroState.phase === "paused-break";
+    const isControllable =
+      pomodoroState.phase === "study" ||
+      pomodoroState.phase === "break" ||
+      pomodoroState.phase === "paused-study" ||
+      pomodoroState.phase === "paused-break";
+
+    button.hidden = !isControllable;
+    button.textContent = isPaused ? "Reanudar temporizador" : "Pausar temporizador";
   });
 
   pomodoroStopButtons.forEach((button) => {
@@ -1269,16 +1303,23 @@ pomodoroBreakInputs.forEach((input) => {
 
 pomodoroStartButtons.forEach((button) => {
   button.addEventListener("click", () => {
-    if (pomodoroState.phase === "study" || pomodoroState.phase === "break") {
-      return;
-    }
-
     if (pomodoroState.phase === "ready-break") {
       startBreakPomodoro();
       return;
     }
 
     startStudyPomodoro();
+  });
+});
+
+pomodoroPauseButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    if (pomodoroState.phase === "study" || pomodoroState.phase === "break") {
+      pausePomodoro();
+      return;
+    }
+
+    resumePomodoro();
   });
 });
 
