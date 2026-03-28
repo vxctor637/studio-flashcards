@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Campus IA | Estudia con tarjetas inteligentes</title>
-    <link rel="stylesheet" href="./styles.css?v=20260327d" />
+    <link rel="stylesheet" href="./styles.css?v=20260327e" />
   </head>
   <body>
     <main class="app-shell">
@@ -88,7 +88,41 @@
               <p class="eyebrow">Modulo</p>
               <h2>Tarjetas de estudio con IA</h2>
             </div>
-            <button type="button" class="secondary module-home-button" data-go-home>Volver al inicio</button>
+            <div class="module-float-stack">
+              <div class="pomodoro-widget" data-pomodoro-widget>
+                <button
+                  type="button"
+                  class="secondary pomodoro-bubble"
+                  data-pomodoro-toggle
+                  aria-label="Abrir temporizador pomodoro"
+                >
+                  <span class="pomodoro-split" data-pomodoro-split>
+                    <span class="pomodoro-segment is-study" data-pomodoro-study-display>25m</span>
+                    <span class="pomodoro-divider" aria-hidden="true"></span>
+                    <span class="pomodoro-segment is-break" data-pomodoro-break-display>5m</span>
+                  </span>
+                  <span class="pomodoro-action-label" data-pomodoro-action-label hidden>Comenzar break</span>
+                </button>
+
+                <div class="pomodoro-panel" data-pomodoro-panel hidden>
+                  <div class="pomodoro-panel-grid">
+                    <label>
+                      Minutos de estudio
+                      <input type="number" min="1" max="180" step="1" value="25" data-pomodoro-study-input />
+                    </label>
+                    <label>
+                      Minutos de break
+                      <input type="number" min="1" max="60" step="1" value="5" data-pomodoro-break-input />
+                    </label>
+                  </div>
+                  <button type="button" class="pomodoro-start-button" data-pomodoro-start>
+                    Comenzar temporizador
+                  </button>
+                </div>
+              </div>
+
+              <button type="button" class="secondary module-home-button" data-go-home>Volver al inicio</button>
+            </div>
           </div>
           <p class="module-copy">
             Genera tarjetas desde materia, tema, apuntes escritos o PDFs con texto.
@@ -216,7 +250,41 @@
               <p class="eyebrow">Modulo</p>
               <h2>Apuntes con IA</h2>
             </div>
-            <button type="button" class="secondary module-home-button" data-go-home>Volver al inicio</button>
+            <div class="module-float-stack">
+              <div class="pomodoro-widget" data-pomodoro-widget>
+                <button
+                  type="button"
+                  class="secondary pomodoro-bubble"
+                  data-pomodoro-toggle
+                  aria-label="Abrir temporizador pomodoro"
+                >
+                  <span class="pomodoro-split" data-pomodoro-split>
+                    <span class="pomodoro-segment is-study" data-pomodoro-study-display>25m</span>
+                    <span class="pomodoro-divider" aria-hidden="true"></span>
+                    <span class="pomodoro-segment is-break" data-pomodoro-break-display>5m</span>
+                  </span>
+                  <span class="pomodoro-action-label" data-pomodoro-action-label hidden>Comenzar break</span>
+                </button>
+
+                <div class="pomodoro-panel" data-pomodoro-panel hidden>
+                  <div class="pomodoro-panel-grid">
+                    <label>
+                      Minutos de estudio
+                      <input type="number" min="1" max="180" step="1" value="25" data-pomodoro-study-input />
+                    </label>
+                    <label>
+                      Minutos de break
+                      <input type="number" min="1" max="60" step="1" value="5" data-pomodoro-break-input />
+                    </label>
+                  </div>
+                  <button type="button" class="pomodoro-start-button" data-pomodoro-start>
+                    Comenzar temporizador
+                  </button>
+                </div>
+              </div>
+
+              <button type="button" class="secondary module-home-button" data-go-home>Volver al inicio</button>
+            </div>
           </div>
           <p class="module-copy">
             Organiza materia, tema, conceptos clave y apuntes para obtener un apunte de estudio completo.
@@ -314,7 +382,41 @@
               <p class="eyebrow">Modulo</p>
               <h2>Quiz interactivo con IA</h2>
             </div>
-            <button type="button" class="secondary module-home-button" data-go-home>Volver al inicio</button>
+            <div class="module-float-stack">
+              <div class="pomodoro-widget" data-pomodoro-widget>
+                <button
+                  type="button"
+                  class="secondary pomodoro-bubble"
+                  data-pomodoro-toggle
+                  aria-label="Abrir temporizador pomodoro"
+                >
+                  <span class="pomodoro-split" data-pomodoro-split>
+                    <span class="pomodoro-segment is-study" data-pomodoro-study-display>25m</span>
+                    <span class="pomodoro-divider" aria-hidden="true"></span>
+                    <span class="pomodoro-segment is-break" data-pomodoro-break-display>5m</span>
+                  </span>
+                  <span class="pomodoro-action-label" data-pomodoro-action-label hidden>Comenzar break</span>
+                </button>
+
+                <div class="pomodoro-panel" data-pomodoro-panel hidden>
+                  <div class="pomodoro-panel-grid">
+                    <label>
+                      Minutos de estudio
+                      <input type="number" min="1" max="180" step="1" value="25" data-pomodoro-study-input />
+                    </label>
+                    <label>
+                      Minutos de break
+                      <input type="number" min="1" max="60" step="1" value="5" data-pomodoro-break-input />
+                    </label>
+                  </div>
+                  <button type="button" class="pomodoro-start-button" data-pomodoro-start>
+                    Comenzar temporizador
+                  </button>
+                </div>
+              </div>
+
+              <button type="button" class="secondary module-home-button" data-go-home>Volver al inicio</button>
+            </div>
           </div>
           <p class="module-copy">
             Genera preguntas de opcion multiple para practicar, revisar errores y medir tu avance.
@@ -487,6 +589,6 @@
     </template>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <script src="./app.js?v=20260327d"></script>
+    <script src="./app.js?v=20260327e"></script>
   </body>
 </html>

@@ -378,6 +378,7 @@ body::before {
 .module-header {
   grid-column: 1 / -1;
   z-index: 20;
+  position: relative;
 }
 
 .module-header-row {
@@ -387,13 +388,148 @@ body::before {
   align-items: center;
 }
 
-.module-home-button {
+.module-float-stack {
   position: absolute;
   top: 20px;
   right: max(24px, calc((100vw - 1240px) / 2 + 26px));
   z-index: 50;
-  box-shadow: 0 18px 32px rgba(40, 72, 126, 0.2);
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
   will-change: transform;
+}
+
+.module-home-button {
+  position: static;
+  box-shadow: 0 18px 32px rgba(40, 72, 126, 0.2);
+}
+
+.pomodoro-widget {
+  position: relative;
+}
+
+.pomodoro-bubble {
+  min-width: 172px;
+  min-height: 52px;
+  padding: 0 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  white-space: nowrap;
+  box-shadow: 0 18px 32px rgba(40, 72, 126, 0.2);
+}
+
+.pomodoro-bubble.is-running-study .is-study,
+.pomodoro-bubble.is-running-break .is-break {
+  color: var(--primary-dark);
+}
+
+.pomodoro-bubble.is-ready {
+  color: #8f2d1d;
+  border-color: rgba(220, 80, 80, 0.28);
+  background: linear-gradient(135deg, rgba(255, 241, 241, 0.96), rgba(255, 255, 255, 0.96));
+}
+
+.pomodoro-bubble.is-ready,
+.pomodoro-bubble.is-ready .pomodoro-action-label {
+  font-weight: 700;
+}
+
+.pomodoro-bubble.is-vibrating {
+  animation: bubble-vibrate 360ms linear infinite;
+}
+
+.pomodoro-split {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 10px;
+}
+
+.pomodoro-segment {
+  font-weight: 700;
+  text-align: center;
+}
+
+.pomodoro-segment.is-break {
+  color: var(--muted);
+}
+
+.pomodoro-divider {
+  width: 1px;
+  height: 20px;
+  background: rgba(102, 117, 143, 0.22);
+}
+
+.pomodoro-action-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.pomodoro-panel {
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 0;
+  width: min(320px, calc(100vw - 40px));
+  padding: 18px;
+  border-radius: 22px;
+  border: 1px solid rgba(47, 109, 246, 0.14);
+  background:
+    linear-gradient(180deg, rgba(239, 246, 255, 0.96), rgba(255, 255, 255, 0.98)),
+    var(--surface);
+  box-shadow: 0 22px 44px rgba(40, 72, 126, 0.16);
+}
+
+.pomodoro-panel-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.pomodoro-panel label {
+  display: grid;
+  gap: 8px;
+  font-size: 0.92rem;
+}
+
+.pomodoro-start-button {
+  width: 100%;
+  margin-top: 14px;
+  color: #fff;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  box-shadow: 0 16px 30px rgba(47, 109, 246, 0.18);
+}
+
+.pomodoro-start-button:disabled {
+  opacity: 0.68;
+  cursor: default;
+  transform: none;
+}
+
+@keyframes bubble-vibrate {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+
+  20% {
+    transform: translate3d(-1.5px, 0, 0);
+  }
+
+  40% {
+    transform: translate3d(1.5px, 0, 0);
+  }
+
+  60% {
+    transform: translate3d(-1.5px, 0, 0);
+  }
+
+  80% {
+    transform: translate3d(1.5px, 0, 0);
+  }
 }
 
 .module-copy {
@@ -916,7 +1052,6 @@ button[type="submit"] {
   .form-grid,
   .actions,
   .results-header,
-  .module-header-row,
   .quiz-meta,
   .quiz-actions {
     flex-direction: column;
@@ -958,8 +1093,15 @@ button[type="submit"] {
     font-size: clamp(2.2rem, 10vw, 3.4rem);
   }
 
-  .module-home-button {
-    right: 16px;
+  .module-float-stack {
     top: 16px;
+    right: 16px;
+    gap: 10px;
+  }
+
+  .pomodoro-bubble {
+    min-width: 152px;
+    min-height: 48px;
+    padding: 0 14px;
   }
 }

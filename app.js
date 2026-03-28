@@ -4,6 +4,17 @@ const views = document.querySelectorAll("[data-view]");
 const openViewButtons = document.querySelectorAll("[data-open-view]");
 const goHomeButtons = document.querySelectorAll("[data-go-home]");
 const moduleHomeButtons = document.querySelectorAll(".module-home-button");
+const moduleFloatStacks = document.querySelectorAll(".module-float-stack");
+const pomodoroWidgets = document.querySelectorAll("[data-pomodoro-widget]");
+const pomodoroToggleButtons = document.querySelectorAll("[data-pomodoro-toggle]");
+const pomodoroPanels = document.querySelectorAll("[data-pomodoro-panel]");
+const pomodoroStudyDisplays = document.querySelectorAll("[data-pomodoro-study-display]");
+const pomodoroBreakDisplays = document.querySelectorAll("[data-pomodoro-break-display]");
+const pomodoroActionLabels = document.querySelectorAll("[data-pomodoro-action-label]");
+const pomodoroSplitDisplays = document.querySelectorAll("[data-pomodoro-split]");
+const pomodoroStudyInputs = document.querySelectorAll("[data-pomodoro-study-input]");
+const pomodoroBreakInputs = document.querySelectorAll("[data-pomodoro-break-input]");
+const pomodoroStartButtons = document.querySelectorAll("[data-pomodoro-start]");
 const subjectInput = document.querySelector("#subject");
 const topicInput = document.querySelector("#topic");
 const notesInput = document.querySelector("#notes");
@@ -115,6 +126,14 @@ let currentQuizResults = [];
 let quizCurrentMode = "full";
 let lastQuizRequestData = null;
 let quizTransitionTimeout = null;
+let pomodoroInterval = null;
+let pomodoroMenuOpen = false;
+const pomodoroState = {
+  studyMinutes: 25,
+  breakMinutes: 5,
+  phase: "idle",
+  remainingSeconds: 25 * 60
+};
 
 const PDF_TEXT_LIMIT = 18000;
 const MIN_STUDY_NOTE_WORDS = 500;
@@ -133,23 +152,164 @@ function showView(viewName) {
 
   window.scrollTo({ top: 0, behavior: "smooth" });
   updateFloatingHomeButtons();
+  syncPomodoroUi();
 }
 
 function updateFloatingHomeButtons() {
-  moduleHomeButtons.forEach((button) => {
-    const currentView = button.closest(".view");
+  moduleFloatStacks.forEach((stack) => {
+    const currentView = stack.closest(".view");
 
     if (!currentView || !currentView.classList.contains("is-active")) {
+      stack.style.transform = "";
       return;
     }
 
     const viewRect = currentView.getBoundingClientRect();
     const scrollTop = window.scrollY || window.pageYOffset;
     const viewTop = scrollTop + viewRect.top;
-    const maxOffset = Math.max(currentView.scrollHeight - button.offsetHeight - 44, 0);
+    const maxOffset = Math.max(currentView.scrollHeight - stack.offsetHeight - 44, 0);
     const nextOffset = Math.min(Math.max(scrollTop - viewTop, 0), maxOffset);
 
-    button.style.transform = `translateY(${nextOffset}px)`;
+    stack.style.transform = `translateY(${nextOffset}px)`;
+  });
+}
+
+function getActiveModuleView() {
+  return document.querySelector('.view.is-active:not(#home-view)');
+}
+
+function formatPomodoroSeconds(totalSeconds) {
+  const safeSeconds = Math.max(totalSeconds, 0);
+  const minutes = Math.floor(safeSeconds / 60);
+  const seconds = safeSeconds % 60;
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+}
+
+function triggerPomodoroAlert() {
+  if (navigator.vibrate) {
+    navigator.vibrate([180, 90, 180, 90, 180]);
+  }
+}
+
+function stopPomodoroInterval() {
+  window.clearInterval(pomodoroInterval);
+  pomodoroInterval = null;
+}
+
+function startPomodoroCountdown(nextPhase, nextReadyPhase, durationSeconds) {
+  stopPomodoroInterval();
+  pomodoroState.phase = nextPhase;
+  pomodoroState.remainingSeconds = durationSeconds;
+  pomodoroMenuOpen = false;
+  syncPomodoroUi();
+
+  pomodoroInterval = window.setInterval(() => {
+    pomodoroState.remainingSeconds -= 1;
+
+    if (pomodoroState.remainingSeconds <= 0) {
+      stopPomodoroInterval();
+      pomodoroState.remainingSeconds = 0;
+      pomodoroState.phase = nextReadyPhase;
+      triggerPomodoroAlert();
+      syncPomodoroUi();
+      return;
+    }
+
+    syncPomodoroUi();
+  }, 1000);
+}
+
+function startStudyPomodoro() {
+  startPomodoroCountdown("study", "ready-break", pomodoroState.studyMinutes * 60);
+}
+
+function startBreakPomodoro() {
+  startPomodoroCountdown("break", "ready-study", pomodoroState.breakMinutes * 60);
+}
+
+function getPomodoroStartButtonLabel() {
+  if (pomodoroState.phase === "study" || pomodoroState.phase === "break") {
+    return "Temporizador en curso";
+  }
+
+  if (pomodoroState.phase === "ready-break") {
+    return "Comenzar break";
+  }
+
+  if (pomodoroState.phase === "ready-study") {
+    return "Volver a estudiar";
+  }
+
+  return "Comenzar temporizador";
+}
+
+function syncPomodoroUi() {
+  const activeModuleView = getActiveModuleView();
+
+  pomodoroWidgets.forEach((widget) => {
+    const belongsToActiveView = activeModuleView ? activeModuleView.contains(widget) : false;
+    widget.hidden = !belongsToActiveView;
+  });
+
+  pomodoroStudyInputs.forEach((input) => {
+    if (document.activeElement !== input) {
+      input.value = String(pomodoroState.studyMinutes);
+    }
+  });
+
+  pomodoroBreakInputs.forEach((input) => {
+    if (document.activeElement !== input) {
+      input.value = String(pomodoroState.breakMinutes);
+    }
+  });
+
+  pomodoroStudyDisplays.forEach((display) => {
+    display.textContent =
+      pomodoroState.phase === "study"
+        ? formatPomodoroSeconds(pomodoroState.remainingSeconds)
+        : `${pomodoroState.studyMinutes}m`;
+  });
+
+  pomodoroBreakDisplays.forEach((display) => {
+    display.textContent =
+      pomodoroState.phase === "break"
+        ? formatPomodoroSeconds(pomodoroState.remainingSeconds)
+        : `${pomodoroState.breakMinutes}m`;
+  });
+
+  pomodoroPanels.forEach((panel) => {
+    const isActivePanel = activeModuleView ? activeModuleView.contains(panel) : false;
+    panel.hidden = !(pomodoroMenuOpen && isActivePanel);
+  });
+
+  pomodoroSplitDisplays.forEach((splitDisplay) => {
+    splitDisplay.hidden = pomodoroState.phase === "ready-break" || pomodoroState.phase === "ready-study";
+  });
+
+  pomodoroActionLabels.forEach((label) => {
+    const shouldShowAction = pomodoroState.phase === "ready-break" || pomodoroState.phase === "ready-study";
+    label.hidden = !shouldShowAction;
+    label.textContent = pomodoroState.phase === "ready-break" ? "Comenzar break" : "Volver a estudiar";
+  });
+
+  pomodoroToggleButtons.forEach((button) => {
+    button.classList.toggle("is-running-study", pomodoroState.phase === "study");
+    button.classList.toggle("is-running-break", pomodoroState.phase === "break");
+    button.classList.toggle("is-ready", pomodoroState.phase === "ready-break" || pomodoroState.phase === "ready-study");
+    button.classList.toggle("is-vibrating", pomodoroState.phase === "ready-break" || pomodoroState.phase === "ready-study");
+
+    if (pomodoroState.phase === "ready-break") {
+      button.setAttribute("aria-label", "Comenzar break");
+    } else if (pomodoroState.phase === "ready-study") {
+      button.setAttribute("aria-label", "Volver a estudiar");
+    } else {
+      button.setAttribute("aria-label", "Abrir temporizador pomodoro");
+    }
+  });
+
+  pomodoroStartButtons.forEach((button) => {
+    button.textContent = getPomodoroStartButtonLabel();
+    button.disabled = pomodoroState.phase === "study" || pomodoroState.phase === "break";
   });
 }
 
@@ -1051,8 +1211,84 @@ goHomeButtons.forEach((button) => {
   });
 });
 
+pomodoroToggleButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    if (pomodoroState.phase === "ready-break") {
+      startBreakPomodoro();
+      return;
+    }
+
+    if (pomodoroState.phase === "ready-study") {
+      startStudyPomodoro();
+      return;
+    }
+
+    pomodoroMenuOpen = !pomodoroMenuOpen;
+    syncPomodoroUi();
+  });
+});
+
+pomodoroStudyInputs.forEach((input) => {
+  input.addEventListener("input", () => {
+    const nextValue = Math.min(180, Math.max(1, Number(input.value) || pomodoroState.studyMinutes));
+    pomodoroState.studyMinutes = nextValue;
+
+    if (pomodoroState.phase === "idle" || pomodoroState.phase === "ready-study") {
+      pomodoroState.remainingSeconds = pomodoroState.studyMinutes * 60;
+    }
+
+    syncPomodoroUi();
+  });
+});
+
+pomodoroBreakInputs.forEach((input) => {
+  input.addEventListener("input", () => {
+    const nextValue = Math.min(60, Math.max(1, Number(input.value) || pomodoroState.breakMinutes));
+    pomodoroState.breakMinutes = nextValue;
+
+    if (pomodoroState.phase === "ready-break") {
+      pomodoroState.remainingSeconds = pomodoroState.breakMinutes * 60;
+    }
+
+    syncPomodoroUi();
+  });
+});
+
+pomodoroStartButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    if (pomodoroState.phase === "study" || pomodoroState.phase === "break") {
+      return;
+    }
+
+    if (pomodoroState.phase === "ready-break") {
+      startBreakPomodoro();
+      return;
+    }
+
+    startStudyPomodoro();
+  });
+});
+
+document.addEventListener("click", (event) => {
+  const target = event.target;
+
+  if (!(target instanceof HTMLElement)) {
+    return;
+  }
+
+  if (target.closest("[data-pomodoro-widget]")) {
+    return;
+  }
+
+  if (pomodoroMenuOpen) {
+    pomodoroMenuOpen = false;
+    syncPomodoroUi();
+  }
+});
+
 window.addEventListener("scroll", updateFloatingHomeButtons, { passive: true });
 window.addEventListener("resize", updateFloatingHomeButtons);
+syncPomodoroUi();
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
