@@ -47,6 +47,7 @@ const summaryResultTitle = document.querySelector("#summary-result-title");
 const summaryResultContent = document.querySelector("#summary-result-content");
 const quizStatusMessage = document.querySelector("#quiz-status-message");
 const quizEmptyState = document.querySelector("#quiz-empty-state");
+const quizResultsPanel = document.querySelector("#quiz-results-panel");
 const quizPlayer = document.querySelector("#quiz-player");
 const quizStep = document.querySelector("#quiz-step");
 const quizLiveScore = document.querySelector("#quiz-live-score");
@@ -618,6 +619,14 @@ function createEmptyQuizResult() {
   };
 }
 
+function setQuizResultsMode(mode) {
+  if (!quizResultsPanel) {
+    return;
+  }
+
+  quizResultsPanel.classList.toggle("is-summary-mode", mode === "summary");
+}
+
 function finishQuizRound() {
   window.clearTimeout(quizTransitionTimeout);
 
@@ -748,6 +757,7 @@ function startQuiz(quizData) {
   quizEmptyState.hidden = true;
   quizPlayer.hidden = false;
   quizSummary.hidden = true;
+  setQuizResultsMode("quiz");
   updateQuizScoreboard();
   renderQuizQuestion();
 }
@@ -760,6 +770,7 @@ function renderQuizSummary() {
 
   quizPlayer.hidden = true;
   quizSummary.hidden = false;
+  setQuizResultsMode("summary");
   quizSummaryTitle.textContent =
     correctAnswers === totalQuestions
       ? "Excelente trabajo, completaste el quiz"
@@ -813,6 +824,8 @@ function renderQuizSummary() {
   } else {
     advanceQuizButton.hidden = true;
   }
+
+  quizSummary.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function prepareRetryIncorrectQuestions() {
@@ -829,6 +842,7 @@ function prepareRetryIncorrectQuestions() {
   quizCurrentMode = "retry";
   quizSummary.hidden = true;
   quizPlayer.hidden = false;
+  setQuizResultsMode("quiz");
   updateQuizUiState({
     message: "Ahora vas a responder automaticamente las preguntas que tuviste incorrectas en el primer intento."
   });

@@ -797,6 +797,16 @@ button[type="submit"] {
   grid-column: 1 / -1;
 }
 
+.results-panel.is-summary-mode .results-header,
+.results-panel.is-summary-mode .status-message,
+.results-panel.is-summary-mode .empty-state {
+  display: none;
+}
+
+.results-panel.is-summary-mode .quiz-summary {
+  margin-top: 0;
+}
+
 .status-message {
   margin: 18px 0 0;
 }
