@@ -15,6 +15,7 @@ const pomodoroSplitDisplays = document.querySelectorAll("[data-pomodoro-split]")
 const pomodoroStudyInputs = document.querySelectorAll("[data-pomodoro-study-input]");
 const pomodoroBreakInputs = document.querySelectorAll("[data-pomodoro-break-input]");
 const pomodoroStartButtons = document.querySelectorAll("[data-pomodoro-start]");
+const pomodoroStopButtons = document.querySelectorAll("[data-pomodoro-stop]");
 const subjectInput = document.querySelector("#subject");
 const topicInput = document.querySelector("#topic");
 const notesInput = document.querySelector("#notes");
@@ -155,6 +156,10 @@ function showView(viewName) {
   syncPomodoroUi();
 }
 
+function getActiveView() {
+  return document.querySelector(".view.is-active");
+}
+
 function updateFloatingHomeButtons() {
   moduleFloatStacks.forEach((stack) => {
     const currentView = stack.closest(".view");
@@ -174,10 +179,6 @@ function updateFloatingHomeButtons() {
   });
 }
 
-function getActiveModuleView() {
-  return document.querySelector('.view.is-active:not(#home-view)');
-}
-
 function formatPomodoroSeconds(totalSeconds) {
   const safeSeconds = Math.max(totalSeconds, 0);
   const minutes = Math.floor(safeSeconds / 60);
@@ -194,6 +195,14 @@ function triggerPomodoroAlert() {
 function stopPomodoroInterval() {
   window.clearInterval(pomodoroInterval);
   pomodoroInterval = null;
+}
+
+function resetPomodoroState() {
+  stopPomodoroInterval();
+  pomodoroState.phase = "idle";
+  pomodoroState.remainingSeconds = pomodoroState.studyMinutes * 60;
+  pomodoroMenuOpen = false;
+  syncPomodoroUi();
 }
 
 function startPomodoroCountdown(nextPhase, nextReadyPhase, durationSeconds) {
@@ -244,10 +253,10 @@ function getPomodoroStartButtonLabel() {
 }
 
 function syncPomodoroUi() {
-  const activeModuleView = getActiveModuleView();
+  const activeView = getActiveView();
 
   pomodoroWidgets.forEach((widget) => {
-    const belongsToActiveView = activeModuleView ? activeModuleView.contains(widget) : false;
+    const belongsToActiveView = activeView ? activeView.contains(widget) : false;
     widget.hidden = !belongsToActiveView;
   });
 
@@ -278,7 +287,7 @@ function syncPomodoroUi() {
   });
 
   pomodoroPanels.forEach((panel) => {
-    const isActivePanel = activeModuleView ? activeModuleView.contains(panel) : false;
+    const isActivePanel = activeView ? activeView.contains(panel) : false;
     panel.hidden = !(pomodoroMenuOpen && isActivePanel);
   });
 
@@ -310,6 +319,10 @@ function syncPomodoroUi() {
   pomodoroStartButtons.forEach((button) => {
     button.textContent = getPomodoroStartButtonLabel();
     button.disabled = pomodoroState.phase === "study" || pomodoroState.phase === "break";
+  });
+
+  pomodoroStopButtons.forEach((button) => {
+    button.hidden = pomodoroState.phase === "idle";
   });
 }
 
@@ -1266,6 +1279,12 @@ pomodoroStartButtons.forEach((button) => {
     }
 
     startStudyPomodoro();
+  });
+});
+
+pomodoroStopButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    resetPomodoroState();
   });
 });
 

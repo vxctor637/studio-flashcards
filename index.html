@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Campus IA | Estudia con tarjetas inteligentes</title>
-    <link rel="stylesheet" href="./styles.css?v=20260327e" />
+    <link rel="stylesheet" href="./styles.css?v=20260327f" />
   </head>
   <body>
     <main class="app-shell">
@@ -46,6 +46,50 @@
                   <strong>Estudio guiado</strong>
                 </div>
               </div>
+
+              <section class="hero-pomodoro">
+                <div class="section-heading compact-heading">
+                  <p class="eyebrow">Enfoque</p>
+                  <h2>Reloj pomodoro</h2>
+                </div>
+
+                <div class="pomodoro-widget pomodoro-widget-home" data-pomodoro-widget>
+                  <button
+                    type="button"
+                    class="secondary pomodoro-bubble pomodoro-bubble-home"
+                    data-pomodoro-toggle
+                    aria-label="Abrir temporizador pomodoro"
+                  >
+                    <span class="pomodoro-split" data-pomodoro-split>
+                      <span class="pomodoro-segment is-study" data-pomodoro-study-display>25m</span>
+                      <span class="pomodoro-divider" aria-hidden="true"></span>
+                      <span class="pomodoro-segment is-break" data-pomodoro-break-display>5m</span>
+                    </span>
+                    <span class="pomodoro-action-label" data-pomodoro-action-label hidden>Comenzar break</span>
+                  </button>
+
+                  <div class="pomodoro-panel" data-pomodoro-panel hidden>
+                    <div class="pomodoro-panel-grid">
+                      <label>
+                        Minutos de estudio
+                        <input type="number" min="1" max="180" step="1" value="25" data-pomodoro-study-input />
+                      </label>
+                      <label>
+                        Minutos de break
+                        <input type="number" min="1" max="60" step="1" value="5" data-pomodoro-break-input />
+                      </label>
+                    </div>
+                    <div class="pomodoro-panel-actions">
+                      <button type="button" class="pomodoro-start-button" data-pomodoro-start>
+                        Comenzar temporizador
+                      </button>
+                      <button type="button" class="secondary pomodoro-stop-button" data-pomodoro-stop hidden>
+                        Detener temporizador
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </section>
             </aside>
           </div>
         </section>
@@ -115,9 +159,14 @@
                       <input type="number" min="1" max="60" step="1" value="5" data-pomodoro-break-input />
                     </label>
                   </div>
-                  <button type="button" class="pomodoro-start-button" data-pomodoro-start>
-                    Comenzar temporizador
-                  </button>
+                  <div class="pomodoro-panel-actions">
+                    <button type="button" class="pomodoro-start-button" data-pomodoro-start>
+                      Comenzar temporizador
+                    </button>
+                    <button type="button" class="secondary pomodoro-stop-button" data-pomodoro-stop hidden>
+                      Detener temporizador
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -277,9 +326,14 @@
                       <input type="number" min="1" max="60" step="1" value="5" data-pomodoro-break-input />
                     </label>
                   </div>
-                  <button type="button" class="pomodoro-start-button" data-pomodoro-start>
-                    Comenzar temporizador
-                  </button>
+                  <div class="pomodoro-panel-actions">
+                    <button type="button" class="pomodoro-start-button" data-pomodoro-start>
+                      Comenzar temporizador
+                    </button>
+                    <button type="button" class="secondary pomodoro-stop-button" data-pomodoro-stop hidden>
+                      Detener temporizador
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -409,9 +463,14 @@
                       <input type="number" min="1" max="60" step="1" value="5" data-pomodoro-break-input />
                     </label>
                   </div>
-                  <button type="button" class="pomodoro-start-button" data-pomodoro-start>
-                    Comenzar temporizador
-                  </button>
+                  <div class="pomodoro-panel-actions">
+                    <button type="button" class="pomodoro-start-button" data-pomodoro-start>
+                      Comenzar temporizador
+                    </button>
+                    <button type="button" class="secondary pomodoro-stop-button" data-pomodoro-stop hidden>
+                      Detener temporizador
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -589,6 +648,6 @@
     </template>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <script src="./app.js?v=20260327e"></script>
+    <script src="./app.js?v=20260327f"></script>
   </body>
 </html>
