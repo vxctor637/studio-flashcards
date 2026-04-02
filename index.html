@@ -4,36 +4,101 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Campus IA | Estudia con tarjetas inteligentes</title>
-    <link rel="stylesheet" href="./styles.css?v=20260327j" />
+    <link rel="stylesheet" href="./styles.css?v=20260401a" />
   </head>
   <body>
     <main class="app-shell">
-      <section class="view view-home is-active" id="home-view" data-view="home">
+      <section class="view view-auth is-active" id="auth-view" data-view="auth">
+        <section class="auth-shell">
+          <section class="auth-copy-card">
+            <p class="eyebrow">Campus IA</p>
+            <h1>Inicia tu espacio de estudio</h1>
+            <p class="hero-copy">
+              Crea una entrada personal antes de usar tus tarjetas, apuntes y quiz. Asi la experiencia se sentira
+              mas tuya desde el primer momento.
+            </p>
+
+            <div class="auth-benefits">
+              <article>
+                <strong>Experiencia personalizada</strong>
+                <p>Te recibimos por tu nombre y ajustamos la portada segun tu objetivo de estudio.</p>
+              </article>
+              <article>
+                <strong>Continuidad</strong>
+                <p>Tu acceso queda guardado en este navegador para volver rapido a estudiar.</p>
+              </article>
+              <article>
+                <strong>Enfoque claro</strong>
+                <p>Desde la entrada defines que materia o meta quieres reforzar primero.</p>
+              </article>
+            </div>
+          </section>
+
+          <section class="auth-form-card">
+            <div class="section-heading">
+              <p class="eyebrow">Acceso</p>
+              <h2>Bienvenido a tu cuenta de estudiante</h2>
+            </div>
+
+            <form id="auth-form">
+              <label for="auth-name">Tu nombre</label>
+              <input id="auth-name" name="authName" type="text" placeholder="Ej: Valentina, Tomas, Martina" required />
+
+              <label for="auth-grade">Curso o etapa</label>
+              <input
+                id="auth-grade"
+                name="authGrade"
+                type="text"
+                placeholder="Ej: 4 medio, Universidad, Preparacion PAES"
+                required
+              />
+
+              <label for="auth-goal">Objetivo actual</label>
+              <input
+                id="auth-goal"
+                name="authGoal"
+                type="text"
+                placeholder="Ej: Reforzar biologia, preparar prueba de historia"
+                required
+              />
+
+              <button type="submit" id="auth-submit-button">Entrar a mi espacio</button>
+            </form>
+          </section>
+        </section>
+      </section>
+
+      <section class="view view-home" id="home-view" data-view="home" hidden>
         <section class="hero">
           <div class="topbar">
             <div>
               <p class="eyebrow">Campus IA</p>
-              <p class="brand-copy">Tu espacio para estudiar mejor cada semana.</p>
+              <p id="home-brand-copy" class="brand-copy">Tu espacio para estudiar mejor cada semana.</p>
             </div>
-            <div class="topbar-badge">Beta para estudiantes</div>
+            <div class="topbar-actions">
+              <div id="home-topbar-badge" class="topbar-badge">Beta para estudiantes</div>
+              <button type="button" class="secondary topbar-profile-button" id="reset-profile-button">
+                Cambiar estudiante
+              </button>
+            </div>
           </div>
 
           <div class="hero-grid">
             <div class="hero-content">
-              <span class="hero-pill">Plataforma de estudio inteligente</span>
-              <h1>Elige como quieres estudiar hoy</h1>
-              <p class="hero-copy">
+              <span id="home-hero-pill" class="hero-pill">Plataforma de estudio inteligente</span>
+              <h1 id="home-hero-title">Elige como quieres estudiar hoy</h1>
+              <p id="home-hero-copy" class="hero-copy">
                 Entra a tus herramientas de estudio con IA desde una portada clara y ordenada.
                 Empieza con tarjetas de estudio o con apuntes generados a partir de tus apuntes base.
               </p>
             </div>
 
             <aside class="hero-preview">
-              <p class="preview-label">Experiencia principal</p>
+              <p id="home-preview-label" class="preview-label">Experiencia principal</p>
               <div class="preview-card">
-                <span class="preview-tag">Listo para usar</span>
-                <strong>Tarjetas y apuntes</strong>
-                <p>Accede a cada modulo por separado para mantener una experiencia mas limpia.</p>
+                <span id="home-preview-tag" class="preview-tag">Listo para usar</span>
+                <strong id="home-preview-title">Tarjetas y apuntes</strong>
+                <p id="home-preview-copy">Accede a cada modulo por separado para mantener una experiencia mas limpia.</p>
               </div>
 
               <div class="preview-metrics">
@@ -660,6 +725,6 @@
     </template>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <script src="./app.js?v=20260327j"></script>
+    <script src="./app.js?v=20260401a"></script>
   </body>
 </html>

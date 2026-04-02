@@ -1,4 +1,18 @@
 const form = document.querySelector("#flashcard-form");
+const authForm = document.querySelector("#auth-form");
+const authNameInput = document.querySelector("#auth-name");
+const authGradeInput = document.querySelector("#auth-grade");
+const authGoalInput = document.querySelector("#auth-goal");
+const resetProfileButton = document.querySelector("#reset-profile-button");
+const homeBrandCopy = document.querySelector("#home-brand-copy");
+const homeTopbarBadge = document.querySelector("#home-topbar-badge");
+const homeHeroPill = document.querySelector("#home-hero-pill");
+const homeHeroTitle = document.querySelector("#home-hero-title");
+const homeHeroCopy = document.querySelector("#home-hero-copy");
+const homePreviewLabel = document.querySelector("#home-preview-label");
+const homePreviewTag = document.querySelector("#home-preview-tag");
+const homePreviewTitle = document.querySelector("#home-preview-title");
+const homePreviewCopy = document.querySelector("#home-preview-copy");
 const summaryForm = document.querySelector("#summary-form");
 const views = document.querySelectorAll("[data-view]");
 const openViewButtons = document.querySelectorAll("[data-open-view]");
@@ -140,6 +154,7 @@ const pomodoroState = {
 
 const PDF_TEXT_LIMIT = 18000;
 const MIN_STUDY_NOTE_WORDS = 500;
+const STUDENT_PROFILE_KEY = "campusia.studentProfile";
 
 if (window.pdfjsLib) {
   window.pdfjsLib.GlobalWorkerOptions.workerSrc =
@@ -156,6 +171,55 @@ function showView(viewName) {
   window.scrollTo({ top: 0, behavior: "smooth" });
   updateFloatingHomeButtons();
   syncPomodoroUi();
+}
+
+function getStoredStudentProfile() {
+  try {
+    const rawProfile = window.localStorage.getItem(STUDENT_PROFILE_KEY);
+
+    if (!rawProfile) {
+      return null;
+    }
+
+    const parsedProfile = JSON.parse(rawProfile);
+
+    if (!parsedProfile?.name || !parsedProfile?.grade || !parsedProfile?.goal) {
+      return null;
+    }
+
+    return parsedProfile;
+  } catch (error) {
+    return null;
+  }
+}
+
+function saveStudentProfile(profile) {
+  window.localStorage.setItem(STUDENT_PROFILE_KEY, JSON.stringify(profile));
+}
+
+function clearStudentProfile() {
+  window.localStorage.removeItem(STUDENT_PROFILE_KEY);
+}
+
+function getFirstName(name) {
+  return name.trim().split(/\s+/)[0] || name.trim();
+}
+
+function applyStudentProfile(profile) {
+  if (!profile) {
+    return;
+  }
+
+  const firstName = getFirstName(profile.name);
+  homeBrandCopy.textContent = `${profile.grade} enfocado en ${profile.goal}.`;
+  homeTopbarBadge.textContent = `Hola, ${firstName}`;
+  homeHeroPill.textContent = `${profile.grade} | Objetivo activo`;
+  homeHeroTitle.textContent = `${firstName}, elige como quieres estudiar hoy`;
+  homeHeroCopy.textContent = `Tu foco actual es ${profile.goal}. Entra a tus herramientas de estudio con IA y sigue avanzando con una experiencia organizada y personal.`;
+  homePreviewLabel.textContent = "Tu sesion";
+  homePreviewTag.textContent = "Perfil activo";
+  homePreviewTitle.textContent = `${profile.name} | ${profile.grade}`;
+  homePreviewCopy.textContent = `Meta actual: ${profile.goal}. Puedes entrar a cada modulo por separado y mantener una experiencia limpia para estudiar.`;
 }
 
 function getActiveView() {
@@ -1300,6 +1364,24 @@ pdfFileInput.addEventListener("change", async (event) => {
   await handlePdfSelection(selectedFile);
 });
 
+authForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+
+  const profile = {
+    name: authNameInput.value.trim(),
+    grade: authGradeInput.value.trim(),
+    goal: authGoalInput.value.trim()
+  };
+
+  if (!profile.name || !profile.grade || !profile.goal) {
+    return;
+  }
+
+  saveStudentProfile(profile);
+  applyStudentProfile(profile);
+  showView("home");
+});
+
 openViewButtons.forEach((button) => {
   button.addEventListener("click", () => {
     const targetView = button.dataset.openView;
@@ -1314,6 +1396,13 @@ goHomeButtons.forEach((button) => {
   button.addEventListener("click", () => {
     showView("home");
   });
+});
+
+resetProfileButton.addEventListener("click", () => {
+  clearStudentProfile();
+  authForm.reset();
+  showView("auth");
+  authNameInput.focus();
 });
 
 pomodoroToggleButtons.forEach((button) => {
@@ -1407,6 +1496,14 @@ document.addEventListener("click", (event) => {
 window.addEventListener("scroll", updateFloatingHomeButtons, { passive: true });
 window.addEventListener("resize", updateFloatingHomeButtons);
 syncPomodoroUi();
+
+const initialStudentProfile = getStoredStudentProfile();
+if (initialStudentProfile) {
+  applyStudentProfile(initialStudentProfile);
+  showView("home");
+} else {
+  showView("auth");
+}
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
