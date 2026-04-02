@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Campus IA | Estudia con tarjetas inteligentes</title>
-    <link rel="stylesheet" href="./styles.css?v=20260402e" />
+    <link rel="stylesheet" href="./styles.css?v=20260402f" />
   </head>
   <body>
     <main class="app-shell">
@@ -42,7 +42,7 @@
           </article>
 
           <div class="drawer-links">
-            <button type="button" class="secondary drawer-link">Historial de estudio</button>
+            <button type="button" class="secondary drawer-link" id="open-history-button">Historial de estudio</button>
             <button type="button" class="secondary drawer-link">Biblioteca personal</button>
             <button type="button" class="secondary drawer-link">Configuracion</button>
             <button type="button" class="secondary drawer-link" id="edit-academic-profile-button">
@@ -76,6 +76,20 @@
 
               <button type="submit" class="secondary">Guardar cambios</button>
             </form>
+          </section>
+
+          <section id="drawer-history-panel" class="drawer-editor" hidden>
+            <div class="section-heading compact-heading">
+              <p class="eyebrow">Historial</p>
+              <h2>Estudio por ramo</h2>
+            </div>
+
+            <div id="history-empty-state" class="history-empty-state">
+              Cuando uses tarjetas, apuntes o quiz, aqui apareceran las sesiones agrupadas por ramo.
+            </div>
+
+            <div id="history-subjects-list" class="history-subjects-list"></div>
+            <div id="history-sessions-list" class="history-sessions-list"></div>
           </section>
         </div>
       </aside>
@@ -832,6 +846,6 @@
     </template>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <script src="./app.js?v=20260402e"></script>
+    <script src="./app.js?v=20260402f"></script>
   </body>
 </html>

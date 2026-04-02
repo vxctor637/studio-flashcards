@@ -224,6 +224,104 @@ body::before {
   gap: 12px;
 }
 
+.history-empty-state {
+  padding: 18px;
+  border-radius: 20px;
+  border: 1px dashed rgba(102, 117, 143, 0.2);
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+.history-subjects-list,
+.history-sessions-list {
+  display: grid;
+  gap: 12px;
+}
+
+.history-subjects-list {
+  margin-top: 14px;
+}
+
+.history-subject-button {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(102, 117, 143, 0.16);
+  box-shadow: var(--shadow-soft);
+}
+
+.history-subject-button.is-active {
+  color: #fff;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  box-shadow: 0 16px 30px rgba(47, 109, 246, 0.22);
+}
+
+.history-subject-count {
+  font-size: 0.82rem;
+  opacity: 0.86;
+}
+
+.history-session-card {
+  padding: 18px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-soft);
+}
+
+.history-session-card h3,
+.history-session-card p,
+.history-module-entry h4,
+.history-module-entry p,
+.history-module-entry ul {
+  margin: 0;
+}
+
+.history-session-card h3 {
+  font-size: 1rem;
+}
+
+.history-session-date {
+  margin-top: 6px;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.history-session-entries {
+  margin-top: 14px;
+  display: grid;
+  gap: 10px;
+}
+
+.history-module-entry {
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: rgba(239, 246, 255, 0.72);
+  border: 1px solid rgba(47, 109, 246, 0.12);
+}
+
+.history-module-entry h4 {
+  margin-bottom: 6px;
+  font-size: 0.98rem;
+}
+
+.history-module-entry p {
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.history-module-entry ul {
+  margin-top: 8px;
+  padding-left: 18px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
 .account-menu {
   position: fixed;
   top: 86px;

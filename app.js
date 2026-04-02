@@ -30,6 +30,11 @@ const drawerAcademicForm = document.querySelector("#drawer-academic-form");
 const drawerAcademicTrackInput = document.querySelector("#drawer-academic-track");
 const drawerSubjectsList = document.querySelector("#drawer-subjects-list");
 const drawerAddSubjectButton = document.querySelector("#drawer-add-subject-button");
+const openHistoryButton = document.querySelector("#open-history-button");
+const drawerHistoryPanel = document.querySelector("#drawer-history-panel");
+const historyEmptyState = document.querySelector("#history-empty-state");
+const historySubjectsList = document.querySelector("#history-subjects-list");
+const historySessionsList = document.querySelector("#history-sessions-list");
 const homeBrandCopy = document.querySelector("#home-brand-copy");
 const homeTopbarBadge = document.querySelector("#home-topbar-badge");
 const homeHeroPill = document.querySelector("#home-hero-pill");
@@ -175,6 +180,9 @@ let authenticatedUser = null;
 let isDrawerOpen = false;
 let isAccountMenuOpen = false;
 let selectedStudySubject = "";
+let selectedHistorySubject = "";
+let currentStudySessionId = "";
+let currentQuizHistoryEntryId = "";
 let academicAttention = {
   menu: false,
   edit: false
@@ -326,6 +334,215 @@ function clearFakeSession() {
 function syncAcademicAttention() {
   menuAttentionDot.hidden = !academicAttention.menu;
   editAcademicDot.hidden = !academicAttention.edit;
+}
+
+function getStudyHistory(user) {
+  return Array.isArray(user?.user_metadata?.study_history) ? user.user_metadata.study_history : [];
+}
+
+function formatSessionDate(timestamp) {
+  try {
+    return new Intl.DateTimeFormat("es-CL", {
+      dateStyle: "medium",
+      timeStyle: "short"
+    }).format(new Date(timestamp));
+  } catch (error) {
+    return String(timestamp);
+  }
+}
+
+function ensureCurrentStudySession() {
+  if (!authenticatedUser) {
+    return null;
+  }
+
+  const history = getStudyHistory(authenticatedUser);
+  const existingSession = history.find((session) => session.id === currentStudySessionId);
+
+  if (existingSession) {
+    return existingSession;
+  }
+
+  const nextSession = {
+    id: `session-${Date.now()}`,
+    number: history.length + 1,
+    startedAt: new Date().toISOString(),
+    entries: []
+  };
+
+  currentStudySessionId = nextSession.id;
+  authenticatedUser.user_metadata.study_history = [...history, nextSession];
+  saveCurrentFakeUser();
+  return nextSession;
+}
+
+function saveHistoryBackToUser(history) {
+  if (!authenticatedUser) {
+    return;
+  }
+
+  authenticatedUser.user_metadata.study_history = history;
+  saveCurrentFakeUser();
+}
+
+function addStudyHistoryEntry({ moduleName, subject, topic, summaryLines }) {
+  if (!authenticatedUser || !subject) {
+    return "";
+  }
+
+  const currentSession = ensureCurrentStudySession();
+
+  if (!currentSession) {
+    return "";
+  }
+
+  const history = getStudyHistory(authenticatedUser);
+  const entryId = `entry-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const nextHistory = history.map((session) => {
+    if (session.id !== currentSession.id) {
+      return session;
+    }
+
+    return {
+      ...session,
+      entries: [
+        ...session.entries,
+        {
+          id: entryId,
+          createdAt: new Date().toISOString(),
+          moduleName,
+          subject,
+          topic: topic || "",
+          summaryLines: Array.isArray(summaryLines) ? summaryLines : []
+        }
+      ]
+    };
+  });
+
+  saveHistoryBackToUser(nextHistory);
+  renderStudyHistory(authenticatedUser);
+  return entryId;
+}
+
+function updateStudyHistoryEntry(entryId, summaryLines) {
+  if (!authenticatedUser || !entryId) {
+    return;
+  }
+
+  const nextHistory = getStudyHistory(authenticatedUser).map((session) => ({
+    ...session,
+    entries: session.entries.map((entry) =>
+      entry.id === entryId
+        ? {
+            ...entry,
+            summaryLines: Array.isArray(summaryLines) ? summaryLines : entry.summaryLines
+          }
+        : entry
+    )
+  }));
+
+  saveHistoryBackToUser(nextHistory);
+  renderStudyHistory(authenticatedUser);
+}
+
+function renderStudyHistory(user) {
+  const history = getStudyHistory(user);
+  const subjectMap = new Map();
+
+  history.forEach((session) => {
+    (session.entries || []).forEach((entry) => {
+      if (!subjectMap.has(entry.subject)) {
+        subjectMap.set(entry.subject, []);
+      }
+
+      const sessions = subjectMap.get(entry.subject);
+      const existingSession = sessions.find((sessionItem) => sessionItem.id === session.id);
+
+      if (existingSession) {
+        existingSession.entries.push(entry);
+      } else {
+        sessions.push({
+          id: session.id,
+          number: session.number,
+          startedAt: session.startedAt,
+          entries: [entry]
+        });
+      }
+    });
+  });
+
+  const subjects = Array.from(subjectMap.keys());
+  historySubjectsList.innerHTML = "";
+  historySessionsList.innerHTML = "";
+  historyEmptyState.hidden = subjects.length > 0;
+
+  if (subjects.length === 0) {
+    selectedHistorySubject = "";
+    return;
+  }
+
+  if (!subjects.includes(selectedHistorySubject)) {
+    selectedHistorySubject = subjects[0];
+  }
+
+  subjects.forEach((subject) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = `history-subject-button ${subject === selectedHistorySubject ? "is-active" : ""}`;
+    button.innerHTML = `<span>${subject}</span><span class="history-subject-count">${subjectMap.get(subject).length} sesiones</span>`;
+    button.addEventListener("click", () => {
+      selectedHistorySubject = subject;
+      renderStudyHistory(authenticatedUser);
+    });
+    historySubjectsList.appendChild(button);
+  });
+
+  const sessions = [...(subjectMap.get(selectedHistorySubject) || [])].sort(
+    (left, right) => new Date(right.startedAt).getTime() - new Date(left.startedAt).getTime()
+  );
+
+  sessions.forEach((session) => {
+    const card = document.createElement("article");
+    card.className = "history-session-card";
+
+    const title = document.createElement("h3");
+    title.textContent = `Sesion ${session.number}`;
+
+    const date = document.createElement("p");
+    date.className = "history-session-date";
+    date.textContent = formatSessionDate(session.startedAt);
+
+    const entriesNode = document.createElement("div");
+    entriesNode.className = "history-session-entries";
+
+    session.entries.forEach((entry) => {
+      const entryNode = document.createElement("section");
+      entryNode.className = "history-module-entry";
+
+      const heading = document.createElement("h4");
+      heading.textContent = entry.moduleName;
+
+      const topicNode = document.createElement("p");
+      topicNode.textContent = entry.topic ? `Tema: ${entry.topic}` : `Ramo: ${entry.subject}`;
+
+      entryNode.append(heading, topicNode);
+
+      if (Array.isArray(entry.summaryLines) && entry.summaryLines.length > 0) {
+        const list = document.createElement("ul");
+        entry.summaryLines.forEach((line) => {
+          const item = document.createElement("li");
+          item.textContent = line;
+          list.appendChild(item);
+        });
+        entryNode.appendChild(list);
+      }
+
+      entriesNode.appendChild(entryNode);
+    });
+
+    card.append(title, date, entriesNode);
+    historySessionsList.appendChild(card);
+  });
 }
 
 function createSubjectInputRow({ value = "", inputId, listName }) {
@@ -527,6 +744,7 @@ function applyAuthenticatedUser(user) {
   homePreviewCopy.textContent = "Tu informacion queda guardada en este navegador para seguir probando funciones sin iniciar sesion real.";
   appUserInitial.textContent = firstName.charAt(0).toUpperCase();
   renderAcademicProfile(user);
+  renderStudyHistory(user);
 }
 
 function updateAuthMessage(message, isError = false) {
@@ -1474,6 +1692,13 @@ function renderQuizSummary() {
     advanceQuizButton.hidden = true;
   }
 
+  updateStudyHistoryEntry(currentQuizHistoryEntryId, [
+    `Nivel: ${lastQuizRequestData?.difficulty || "intermedio"}`,
+    `Preguntas generadas: ${fullQuiz.length}`,
+    `Puntaje final: ${correctAnswers}/${totalQuestions}`,
+    `Tema trabajado: ${lastQuizRequestData?.topic || "Tema principal"}`
+  ]);
+
   quizSummary.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
@@ -1776,7 +2001,16 @@ editAcademicProfileButton.addEventListener("click", () => {
     saveCurrentFakeUser();
   }
   syncAcademicAttention();
+  drawerHistoryPanel.hidden = true;
   drawerAcademicEditor.hidden = !drawerAcademicEditor.hidden;
+});
+
+openHistoryButton.addEventListener("click", () => {
+  drawerAcademicEditor.hidden = true;
+  drawerHistoryPanel.hidden = !drawerHistoryPanel.hidden;
+  if (!drawerHistoryPanel.hidden && authenticatedUser) {
+    renderStudyHistory(authenticatedUser);
+  }
 });
 
 drawerAcademicForm.addEventListener("submit", async (event) => {
@@ -2000,6 +2234,17 @@ form.addEventListener("submit", async (event) => {
       state: "Completado",
       message: `Las tarjetas fueron creadas con IA y ya estan listas para estudiar. Modelo: ${result.model || "Gemini"}.`
     });
+    addStudyHistoryEntry({
+      moduleName: "Tarjetas de estudio",
+      subject,
+      topic,
+      summaryLines: [
+        "Modo: IA activa",
+        `Cantidad de tarjetas: ${currentCards.length}`,
+        `Nivel: ${difficulty}`,
+        `Base usada: ${notes ? "Apuntes del estudiante" : "Generacion guiada"}`
+      ]
+    });
   } catch (error) {
     currentCards = buildFallbackCards(subject, topic, notes, cardTotal);
     renderCards(currentCards);
@@ -2008,6 +2253,17 @@ form.addEventListener("submit", async (event) => {
       mode: "Modo local",
       state: "Fallback",
       message: `La IA no respondio correctamente. Se usaron tarjetas locales. Detalle: ${error instanceof Error ? error.message : "Error desconocido."}`
+    });
+    addStudyHistoryEntry({
+      moduleName: "Tarjetas de estudio",
+      subject,
+      topic,
+      summaryLines: [
+        "Modo: Fallback local",
+        `Cantidad de tarjetas: ${currentCards.length}`,
+        `Nivel: ${difficulty}`,
+        `Detalle: ${error instanceof Error ? error.message : "Error desconocido."}`
+      ]
     });
   }
 });
@@ -2073,10 +2329,33 @@ summaryForm.addEventListener("submit", async (event) => {
     updateSummaryUiState({
       message: `Los apuntes fueron generados con IA y ya estan listos para estudiar. Modelo: ${result.model || "Gemini"}.`
     });
+    addStudyHistoryEntry({
+      moduleName: "Generador de apuntes",
+      subject,
+      topic,
+      summaryLines: [
+        "Modo: IA activa",
+        `Conceptos clave: ${keyConcepts.length > 0 ? keyConcepts.join(", ") : "No especificados"}`,
+        `Secciones generadas: ${normalizedResult.sections.length}`,
+        `Palabras aproximadas: ${getStudyNoteWordCount(normalizedResult)}`
+      ]
+    });
   } catch (error) {
-    renderSummary(buildLocalSummary(requestData));
+    const localSummary = buildLocalSummary(requestData);
+    renderSummary(localSummary);
     updateSummaryUiState({
       message: `La IA no respondio correctamente. Se generaron apuntes locales. Detalle: ${error instanceof Error ? error.message : "Error desconocido."}`
+    });
+    addStudyHistoryEntry({
+      moduleName: "Generador de apuntes",
+      subject,
+      topic,
+      summaryLines: [
+        "Modo: Fallback local",
+        `Conceptos clave: ${keyConcepts.length > 0 ? keyConcepts.join(", ") : "No especificados"}`,
+        `Secciones generadas: ${localSummary.sections.length}`,
+        `Detalle: ${error instanceof Error ? error.message : "Error desconocido."}`
+      ]
     });
   } finally {
     finishNotesProgress();
@@ -2174,12 +2453,34 @@ quizForm.addEventListener("submit", async (event) => {
   try {
     const result = await requestAiQuiz(requestData);
     const normalizedQuiz = normalizeQuizResponse(result, requestData);
+    currentQuizHistoryEntryId = addStudyHistoryEntry({
+      moduleName: "Quiz interactivo",
+      subject,
+      topic,
+      summaryLines: [
+        "Modo: IA activa",
+        `Nivel: ${difficulty}`,
+        `Preguntas solicitadas: ${quizTotal}`,
+        `Tema trabajado: ${topic}`
+      ]
+    });
 
     startQuiz(normalizedQuiz);
     updateQuizUiState({
       message: `El quiz fue generado con IA y ya esta listo para practicar. Modelo: ${result.model || "Gemini"}.`
     });
   } catch (error) {
+    currentQuizHistoryEntryId = addStudyHistoryEntry({
+      moduleName: "Quiz interactivo",
+      subject,
+      topic,
+      summaryLines: [
+        "Modo: Fallback local",
+        `Nivel: ${difficulty}`,
+        `Preguntas solicitadas: ${quizTotal}`,
+        `Detalle: ${error instanceof Error ? error.message : "Error desconocido."}`
+      ]
+    });
     startQuiz(buildFallbackQuiz(requestData));
     updateQuizUiState({
       message: `La IA no respondio correctamente. Se genero un quiz local. Detalle: ${error instanceof Error ? error.message : "Error desconocido."}`
