@@ -140,6 +140,7 @@ body::before {
 
 .attention-dot-inline {
   position: static;
+  display: inline-block;
   margin-left: 10px;
   flex-shrink: 0;
 }
@@ -202,6 +203,12 @@ body::before {
 .drawer-link,
 .drawer-sign-out-button {
   width: 100%;
+}
+
+.drawer-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .drawer-editor {
