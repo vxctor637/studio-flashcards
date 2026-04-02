@@ -14,6 +14,7 @@ const menuAttentionDot = document.querySelector("#menu-attention-dot");
 const drawerCloseButton = document.querySelector("#drawer-close-button");
 const userMenuButton = document.querySelector("#user-menu-button");
 const appUserInitial = document.querySelector("#app-user-initial");
+const appCurrentSubject = document.querySelector("#app-current-subject");
 const sessionProfileForm = document.querySelector("#session-profile-form");
 const academicTrackInput = document.querySelector("#academic-track");
 const sessionSubjectsList = document.querySelector("#session-subjects-list");
@@ -183,6 +184,7 @@ let isDrawerOpen = false;
 let isAccountMenuOpen = false;
 let selectedStudySubject = "";
 let selectedHistorySubject = "";
+let selectedHistorySessionId = "";
 let currentStudySessionId = "";
 let currentQuizHistoryEntryId = "";
 let selectedHistoryEntryId = "";
@@ -343,6 +345,53 @@ function getStudyHistory(user) {
   return Array.isArray(user?.user_metadata?.study_history) ? user.user_metadata.study_history : [];
 }
 
+function normalizeStudyHistorySubjects(user) {
+  if (!user?.user_metadata) {
+    return;
+  }
+
+  const profile = getAcademicProfileFromUser(user);
+  const validSubjects = Array.isArray(profile.subjects) ? profile.subjects.filter(Boolean) : [];
+
+  if (validSubjects.length === 0) {
+    return;
+  }
+
+  const fallbackSubject = validSubjects.includes(profile.preferredSubject)
+    ? profile.preferredSubject
+    : validSubjects[0];
+  const history = getStudyHistory(user);
+  let hasChanges = false;
+
+  const normalizedHistory = history.map((session) => {
+    const nextEntries = (session.entries || []).map((entry) => {
+      if (validSubjects.includes(entry.subject)) {
+        return entry;
+      }
+
+      hasChanges = true;
+      return {
+        ...entry,
+        subject: fallbackSubject
+      };
+    });
+
+    return {
+      ...session,
+      entries: nextEntries
+    };
+  });
+
+  if (!hasChanges) {
+    return;
+  }
+
+  user.user_metadata.study_history = normalizedHistory;
+  if (authenticatedUser && authenticatedUser.id === user.id) {
+    saveCurrentFakeUser();
+  }
+}
+
 function formatSessionDate(timestamp) {
   try {
     return new Intl.DateTimeFormat("es-CL", {
@@ -389,7 +438,9 @@ function saveHistoryBackToUser(history) {
 }
 
 function addStudyHistoryEntry({ moduleName, subject, topic, summaryLines, details }) {
-  if (!authenticatedUser || !subject) {
+  const historySubject = getHistorySubject(subject);
+
+  if (!authenticatedUser || !historySubject) {
     return "";
   }
 
@@ -414,7 +465,7 @@ function addStudyHistoryEntry({ moduleName, subject, topic, summaryLines, detail
           id: entryId,
           createdAt: new Date().toISOString(),
           moduleName,
-          subject,
+          subject: historySubject,
           topic: topic || "",
           summaryLines: Array.isArray(summaryLines) ? summaryLines : [],
           details: details || null
@@ -451,6 +502,7 @@ function updateStudyHistoryEntry(entryId, summaryLines, details) {
 }
 
 function renderStudyHistory(user) {
+  normalizeStudyHistorySubjects(user);
   const history = getStudyHistory(user);
   const subjectMap = new Map();
 
@@ -487,6 +539,7 @@ function renderStudyHistory(user) {
 
   if (subjects.length === 0) {
     selectedHistorySubject = "";
+    selectedHistorySessionId = "";
     return;
   }
 
@@ -510,9 +563,17 @@ function renderStudyHistory(user) {
     (left, right) => new Date(right.startedAt).getTime() - new Date(left.startedAt).getTime()
   );
 
+  if (!sessions.some((session) => session.id === selectedHistorySessionId)) {
+    selectedHistorySessionId = "";
+  }
+
   sessions.forEach((session) => {
     const card = document.createElement("article");
     card.className = "history-session-card";
+
+    const toggle = document.createElement("button");
+    toggle.type = "button";
+    toggle.className = `history-session-toggle ${selectedHistorySessionId === session.id ? "is-open" : ""}`;
 
     const title = document.createElement("h3");
     title.textContent = `Sesion ${session.number}`;
@@ -521,8 +582,19 @@ function renderStudyHistory(user) {
     date.className = "history-session-date";
     date.textContent = formatSessionDate(session.startedAt);
 
+    const indicator = document.createElement("span");
+    indicator.className = "history-session-indicator";
+    indicator.textContent = selectedHistorySessionId === session.id ? "Ocultar" : "Ver";
+
+    toggle.append(title, date, indicator);
+    toggle.addEventListener("click", () => {
+      selectedHistorySessionId = selectedHistorySessionId === session.id ? "" : session.id;
+      renderStudyHistory(authenticatedUser);
+    });
+
     const entriesNode = document.createElement("div");
     entriesNode.className = "history-session-entries";
+    entriesNode.hidden = selectedHistorySessionId !== session.id;
 
     session.entries.forEach((entry) => {
       const entryNode = document.createElement("button");
@@ -555,7 +627,7 @@ function renderStudyHistory(user) {
       entriesNode.appendChild(entryNode);
     });
 
-    card.append(title, date, entriesNode);
+    card.append(toggle, entriesNode);
     historySessionsList.appendChild(card);
   });
 }
@@ -724,6 +796,10 @@ function syncSelectedSubjectIntoModules() {
   }
 }
 
+function getHistorySubject(subject) {
+  return selectedStudySubject || subject || "Sin ramo seleccionado";
+}
+
 function renderAcademicProfile(user) {
   const profile = getAcademicProfileFromUser(user);
   const hasProfile = Boolean(profile.academicTrack && profile.subjects.length > 0);
@@ -743,6 +819,7 @@ function renderAcademicProfile(user) {
 
   if (!hasProfile) {
     selectedStudySubject = "";
+    updateActiveSubjectChip();
     sessionSubjectButtons.innerHTML = "";
     sessionSelectedSubject.textContent = "Todavia no has seleccionado un ramo para esta sesion.";
     sessionSummaryCopy.textContent =
@@ -774,6 +851,7 @@ function renderAcademicProfile(user) {
       });
       sessionSelectedSubject.textContent = `Ramo activo para esta sesion: ${selectedStudySubject}.`;
       syncSelectedSubjectIntoModules();
+      updateActiveSubjectChip();
 
       if (!authenticatedUser) {
         authenticatedUser.user_metadata.preferred_subject = subject;
@@ -790,6 +868,7 @@ function renderAcademicProfile(user) {
 
   sessionSelectedSubject.textContent = `Ramo activo para esta sesion: ${selectedStudySubject}.`;
   syncSelectedSubjectIntoModules();
+  updateActiveSubjectChip();
 }
 
 async function saveAcademicProfile({ academicTrack, subjects }) {
@@ -848,6 +927,7 @@ function applyAuthenticatedUser(user) {
   homePreviewTitle.textContent = displayName;
   homePreviewCopy.textContent = "Tu informacion queda guardada en este navegador para seguir probando funciones sin iniciar sesion real.";
   appUserInitial.textContent = firstName.charAt(0).toUpperCase();
+  updateActiveSubjectChip();
   renderAcademicProfile(user);
   renderStudyHistory(user);
 }
@@ -859,6 +939,8 @@ function updateAuthMessage(message, isError = false) {
 
 function handleSignedOutState(message = "La sesion fue cerrada correctamente.") {
   authenticatedUser = null;
+  selectedStudySubject = "";
+  updateActiveSubjectChip();
   authForm.reset();
   updateAuthMessage(message);
   showView("auth");
@@ -878,14 +960,28 @@ function updateFloatingHomeButtons() {
       return;
     }
 
-    const viewRect = currentView.getBoundingClientRect();
     const scrollTop = window.scrollY || window.pageYOffset;
-    const viewTop = scrollTop + viewRect.top;
-    const maxOffset = Math.max(currentView.scrollHeight - stack.offsetHeight - 44, 0);
-    const nextOffset = Math.min(Math.max(scrollTop - viewTop, 0), maxOffset);
+    const viewTop = currentView.offsetTop;
+    const maxOffset = Math.max(currentView.offsetHeight - stack.offsetHeight - 44, 0);
+    const nextOffset = Math.min(Math.max(scrollTop - viewTop + 18, 0), maxOffset);
 
     stack.style.transform = `translateY(${nextOffset}px)`;
   });
+}
+
+function updateActiveSubjectChip() {
+  if (!appCurrentSubject) {
+    return;
+  }
+
+  if (!selectedStudySubject) {
+    appCurrentSubject.hidden = true;
+    appCurrentSubject.textContent = "Ramo activo: Sin seleccionar";
+    return;
+  }
+
+  appCurrentSubject.hidden = false;
+  appCurrentSubject.textContent = `Ramo activo: ${selectedStudySubject}`;
 }
 
 function formatPomodoroSeconds(totalSeconds) {
@@ -2126,7 +2222,6 @@ editAcademicProfileButton.addEventListener("click", () => {
     saveCurrentFakeUser();
   }
   syncAcademicAttention();
-  drawerHistoryPanel.hidden = true;
   drawerAcademicEditor.hidden = !drawerAcademicEditor.hidden;
 });
 

@@ -77,6 +77,13 @@ body::before {
   box-shadow: var(--shadow-soft);
 }
 
+.app-topbar-meta {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
 .app-topbar-brand {
   text-align: center;
 }
@@ -125,6 +132,21 @@ body::before {
   color: #fff;
   font-weight: 800;
   background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+}
+
+.app-current-subject {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: rgba(47, 109, 246, 0.1);
+  border: 1px solid rgba(47, 109, 246, 0.14);
+  color: var(--primary-dark);
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-align: center;
 }
 
 .attention-dot {
@@ -276,11 +298,24 @@ body::before {
 }
 
 .history-session-card {
-  padding: 18px;
+  padding: 14px;
   border-radius: 22px;
   background: rgba(255, 255, 255, 0.88);
   border: 1px solid var(--border);
   box-shadow: var(--shadow-soft);
+}
+
+.history-session-toggle {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px 12px;
+  align-items: center;
+  text-align: left;
+  padding: 4px;
+  background: transparent;
+  border: none;
+  box-shadow: none;
 }
 
 .history-session-card h3,
@@ -299,6 +334,28 @@ body::before {
   margin-top: 6px;
   color: var(--muted);
   line-height: 1.55;
+}
+
+.history-session-indicator {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 74px;
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: rgba(47, 109, 246, 0.1);
+  color: var(--primary-dark);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.history-session-toggle.is-open .history-session-indicator {
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: #fff;
 }
 
 .history-session-entries {
@@ -950,7 +1007,7 @@ body::before {
 .module-float-stack {
   position: absolute;
   top: 20px;
-  right: max(24px, calc((100vw - 1240px) / 2 + 26px));
+  right: 24px;
   z-index: 50;
   display: flex;
   align-items: flex-start;
@@ -1676,6 +1733,16 @@ button[type="submit"] {
     top: 10px;
     padding: 12px 14px;
     border-radius: 20px;
+  }
+
+  .app-topbar-meta {
+    gap: 6px;
+  }
+
+  .app-current-subject {
+    max-width: 100%;
+    font-size: 0.74rem;
+    padding: 6px 10px;
   }
 
   .app-drawer {
