@@ -130,6 +130,7 @@ let lastQuizRequestData = null;
 let quizTransitionTimeout = null;
 let pomodoroInterval = null;
 let pomodoroMenuOpen = false;
+let pomodoroAudioContext = null;
 const pomodoroState = {
   studyMinutes: 25,
   breakMinutes: 5,
@@ -187,10 +188,67 @@ function formatPomodoroSeconds(totalSeconds) {
   return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
+function ensurePomodoroAudioContext() {
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+
+  if (!AudioContextClass) {
+    return null;
+  }
+
+  if (!pomodoroAudioContext) {
+    pomodoroAudioContext = new AudioContextClass();
+  }
+
+  return pomodoroAudioContext;
+}
+
+async function playPomodoroBuzz() {
+  const audioContext = ensurePomodoroAudioContext();
+
+  if (!audioContext) {
+    return;
+  }
+
+  try {
+    if (audioContext.state === "suspended") {
+      await audioContext.resume();
+    }
+
+    const startAt = audioContext.currentTime;
+    const masterGain = audioContext.createGain();
+    masterGain.gain.setValueAtTime(0.0001, startAt);
+    masterGain.connect(audioContext.destination);
+
+    const bursts = [
+      { offset: 0, duration: 0.14, frequency: 170 },
+      { offset: 0.2, duration: 0.14, frequency: 150 },
+      { offset: 0.4, duration: 0.18, frequency: 170 }
+    ];
+
+    bursts.forEach((burst) => {
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      oscillator.type = "sawtooth";
+      oscillator.frequency.setValueAtTime(burst.frequency, startAt + burst.offset);
+      gainNode.gain.setValueAtTime(0.0001, startAt + burst.offset);
+      gainNode.gain.exponentialRampToValueAtTime(0.055, startAt + burst.offset + 0.02);
+      gainNode.gain.exponentialRampToValueAtTime(0.0001, startAt + burst.offset + burst.duration);
+      oscillator.connect(gainNode);
+      gainNode.connect(masterGain);
+      oscillator.start(startAt + burst.offset);
+      oscillator.stop(startAt + burst.offset + burst.duration);
+    });
+  } catch (error) {
+    console.warn("No fue posible reproducir el zumbido del pomodoro.", error);
+  }
+}
+
 function triggerPomodoroAlert() {
   if (navigator.vibrate) {
     navigator.vibrate([180, 90, 180, 90, 180]);
   }
+
+  playPomodoroBuzz();
 }
 
 function stopPomodoroInterval() {
