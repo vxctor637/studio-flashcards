@@ -1,9 +1,14 @@
 const form = document.querySelector("#flashcard-form");
 const authForm = document.querySelector("#auth-form");
-const authNameInput = document.querySelector("#auth-name");
-const authGradeInput = document.querySelector("#auth-grade");
-const authGoalInput = document.querySelector("#auth-goal");
-const resetProfileButton = document.querySelector("#reset-profile-button");
+const authFullNameLabel = document.querySelector('label[for="auth-full-name"]');
+const authFullNameInput = document.querySelector("#auth-full-name");
+const authEmailInput = document.querySelector("#auth-email");
+const authPasswordInput = document.querySelector("#auth-password");
+const authStatusMessage = document.querySelector("#auth-status-message");
+const authSignInTabButton = document.querySelector("#auth-signin-tab");
+const authSignUpTabButton = document.querySelector("#auth-signup-tab");
+const authSubmitButton = document.querySelector("#auth-submit-button");
+const signOutButton = document.querySelector("#sign-out-button");
 const homeBrandCopy = document.querySelector("#home-brand-copy");
 const homeTopbarBadge = document.querySelector("#home-topbar-badge");
 const homeHeroPill = document.querySelector("#home-hero-pill");
@@ -145,6 +150,9 @@ let quizTransitionTimeout = null;
 let pomodoroInterval = null;
 let pomodoroMenuOpen = false;
 let pomodoroAudioContext = null;
+let supabaseClient = null;
+let authMode = "signin";
+let authenticatedUser = null;
 const pomodoroState = {
   studyMinutes: 25,
   breakMinutes: 5,
@@ -154,7 +162,6 @@ const pomodoroState = {
 
 const PDF_TEXT_LIMIT = 18000;
 const MIN_STUDY_NOTE_WORDS = 500;
-const STUDENT_PROFILE_KEY = "campusia.studentProfile";
 
 if (window.pdfjsLib) {
   window.pdfjsLib.GlobalWorkerOptions.workerSrc =
@@ -173,53 +180,119 @@ function showView(viewName) {
   syncPomodoroUi();
 }
 
-function getStoredStudentProfile() {
-  try {
-    const rawProfile = window.localStorage.getItem(STUDENT_PROFILE_KEY);
+function getDisplayNameFromUser(user) {
+  const fullName = user?.user_metadata?.full_name;
 
-    if (!rawProfile) {
-      return null;
-    }
-
-    const parsedProfile = JSON.parse(rawProfile);
-
-    if (!parsedProfile?.name || !parsedProfile?.grade || !parsedProfile?.goal) {
-      return null;
-    }
-
-    return parsedProfile;
-  } catch (error) {
-    return null;
+  if (typeof fullName === "string" && fullName.trim()) {
+    return fullName.trim();
   }
+
+  if (typeof user?.email === "string" && user.email.includes("@")) {
+    return user.email.split("@")[0];
+  }
+
+  return "Estudiante";
 }
 
-function saveStudentProfile(profile) {
-  window.localStorage.setItem(STUDENT_PROFILE_KEY, JSON.stringify(profile));
-}
-
-function clearStudentProfile() {
-  window.localStorage.removeItem(STUDENT_PROFILE_KEY);
-}
-
-function getFirstName(name) {
-  return name.trim().split(/\s+/)[0] || name.trim();
-}
-
-function applyStudentProfile(profile) {
-  if (!profile) {
+function applyAuthenticatedUser(user) {
+  if (!user) {
     return;
   }
 
-  const firstName = getFirstName(profile.name);
-  homeBrandCopy.textContent = `${profile.grade} enfocado en ${profile.goal}.`;
+  authenticatedUser = user;
+
+  const displayName = getDisplayNameFromUser(user);
+  const firstName = displayName.split(/\s+/)[0] || displayName;
+  const email = user.email || "Cuenta activa";
+
+  homeBrandCopy.textContent = `Sesion iniciada con ${email}.`;
   homeTopbarBadge.textContent = `Hola, ${firstName}`;
-  homeHeroPill.textContent = `${profile.grade} | Objetivo activo`;
+  homeHeroPill.textContent = "Cuenta de estudio activa";
   homeHeroTitle.textContent = `${firstName}, elige como quieres estudiar hoy`;
-  homeHeroCopy.textContent = `Tu foco actual es ${profile.goal}. Entra a tus herramientas de estudio con IA y sigue avanzando con una experiencia organizada y personal.`;
+  homeHeroCopy.textContent =
+    "Accede a tus herramientas de estudio con IA desde una portada clara y ordenada. Tu cuenta ya esta lista para crecer con historial, progreso y biblioteca personal.";
   homePreviewLabel.textContent = "Tu sesion";
-  homePreviewTag.textContent = "Perfil activo";
-  homePreviewTitle.textContent = `${profile.name} | ${profile.grade}`;
-  homePreviewCopy.textContent = `Meta actual: ${profile.goal}. Puedes entrar a cada modulo por separado y mantener una experiencia limpia para estudiar.`;
+  homePreviewTag.textContent = "Autenticado";
+  homePreviewTitle.textContent = displayName;
+  homePreviewCopy.textContent = `Correo activo: ${email}. Entra a cada modulo por separado y manten una experiencia limpia para estudiar.`;
+}
+
+function setAuthMode(mode) {
+  authMode = mode === "signup" ? "signup" : "signin";
+  authSignInTabButton.classList.toggle("is-active", authMode === "signin");
+  authSignUpTabButton.classList.toggle("is-active", authMode === "signup");
+  authFullNameInput.required = authMode === "signup";
+  authFullNameLabel.hidden = authMode === "signin";
+  authFullNameInput.hidden = authMode === "signin";
+  authPasswordInput.autocomplete = authMode === "signup" ? "new-password" : "current-password";
+  authSubmitButton.textContent = authMode === "signup" ? "Crear cuenta" : "Entrar a mi espacio";
+  authStatusMessage.textContent =
+    authMode === "signup"
+      ? "Crea tu cuenta con correo y contrasena. Si tu proyecto tiene confirmacion por email, revisa tu bandeja antes de iniciar sesion."
+      : "Inicia sesion con tu cuenta para entrar siempre a tu espacio.";
+}
+
+function updateAuthMessage(message, isError = false) {
+  authStatusMessage.textContent = message;
+  authStatusMessage.style.color = isError ? "#8f2d1d" : "";
+}
+
+async function loadSupabaseConfig() {
+  const response = await fetch("/api/config");
+  const payload = await response.json();
+
+  if (!response.ok) {
+    throw new Error(payload?.error || "No fue posible cargar la configuracion de autenticacion.");
+  }
+
+  if (!payload?.supabaseUrl || !payload?.supabaseAnonKey) {
+    throw new Error("Faltan SUPABASE_URL o SUPABASE_ANON_KEY en la configuracion.");
+  }
+
+  return payload;
+}
+
+async function initializeSupabaseAuth() {
+  if (!window.supabase?.createClient) {
+    updateAuthMessage("No fue posible cargar el cliente de autenticacion.", true);
+    return;
+  }
+
+  try {
+    const config = await loadSupabaseConfig();
+    supabaseClient = window.supabase.createClient(config.supabaseUrl, config.supabaseAnonKey);
+
+    const {
+      data: { session },
+      error
+    } = await supabaseClient.auth.getSession();
+
+    if (error) {
+      throw error;
+    }
+
+    if (session?.user) {
+      applyAuthenticatedUser(session.user);
+      showView("home");
+    } else {
+      authenticatedUser = null;
+      showView("auth");
+    }
+
+    supabaseClient.auth.onAuthStateChange((_event, sessionData) => {
+      if (sessionData?.user) {
+        applyAuthenticatedUser(sessionData.user);
+      } else {
+        authenticatedUser = null;
+      }
+    });
+  } catch (error) {
+    updateAuthMessage(
+      error instanceof Error ? error.message : "No fue posible inicializar el acceso con Supabase.",
+      true
+    );
+    showView("auth");
+  }
 }
 
 function getActiveView() {
@@ -1364,26 +1437,86 @@ pdfFileInput.addEventListener("change", async (event) => {
   await handlePdfSelection(selectedFile);
 });
 
-authForm.addEventListener("submit", (event) => {
+authForm.addEventListener("submit", async (event) => {
   event.preventDefault();
 
-  const profile = {
-    name: authNameInput.value.trim(),
-    grade: authGradeInput.value.trim(),
-    goal: authGoalInput.value.trim()
-  };
-
-  if (!profile.name || !profile.grade || !profile.goal) {
+  if (!supabaseClient) {
+    updateAuthMessage("La autenticacion todavia no esta disponible. Revisa la configuracion de Supabase.", true);
     return;
   }
 
-  saveStudentProfile(profile);
-  applyStudentProfile(profile);
-  showView("home");
+  const email = authEmailInput.value.trim();
+  const password = authPasswordInput.value.trim();
+  const fullName = authFullNameInput.value.trim();
+
+  if (!email || !password || (authMode === "signup" && !fullName)) {
+    updateAuthMessage("Completa los campos obligatorios para continuar.", true);
+    return;
+  }
+
+  authSubmitButton.disabled = true;
+
+  try {
+    if (authMode === "signup") {
+      const { data, error } = await supabaseClient.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName
+          }
+        }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (data?.session?.user) {
+        applyAuthenticatedUser(data.session.user);
+        updateAuthMessage("Tu cuenta fue creada y la sesion ya esta activa.");
+        showView("home");
+      } else {
+        updateAuthMessage(
+          "Tu cuenta fue creada. Si activaste confirmacion por correo en Supabase, revisa tu email antes de iniciar sesion."
+        );
+        setAuthMode("signin");
+      }
+
+      return;
+    }
+
+    const {
+      data: { user },
+      error
+    } = await supabaseClient.auth.signInWithPassword({
+      email,
+      password
+    });
+
+    if (error) {
+      throw error;
+    }
+
+    if (user) {
+      applyAuthenticatedUser(user);
+      updateAuthMessage("Sesion iniciada correctamente.");
+      showView("home");
+    }
+  } catch (error) {
+    updateAuthMessage(error instanceof Error ? error.message : "No fue posible completar la autenticacion.", true);
+  } finally {
+    authSubmitButton.disabled = false;
+  }
 });
 
 openViewButtons.forEach((button) => {
   button.addEventListener("click", () => {
+    if (!supabaseClient || !authenticatedUser) {
+      showView("auth");
+      return;
+    }
+
     const targetView = button.dataset.openView;
 
     if (targetView) {
@@ -1398,11 +1531,27 @@ goHomeButtons.forEach((button) => {
   });
 });
 
-resetProfileButton.addEventListener("click", () => {
-  clearStudentProfile();
+authSignInTabButton.addEventListener("click", () => {
+  setAuthMode("signin");
+});
+
+authSignUpTabButton.addEventListener("click", () => {
+  setAuthMode("signup");
+});
+
+signOutButton.addEventListener("click", async () => {
+  if (!supabaseClient) {
+    showView("auth");
+    return;
+  }
+
+  await supabaseClient.auth.signOut();
+  authenticatedUser = null;
   authForm.reset();
+  setAuthMode("signin");
+  updateAuthMessage("La sesion fue cerrada correctamente.");
   showView("auth");
-  authNameInput.focus();
+  authEmailInput.focus();
 });
 
 pomodoroToggleButtons.forEach((button) => {
@@ -1496,14 +1645,8 @@ document.addEventListener("click", (event) => {
 window.addEventListener("scroll", updateFloatingHomeButtons, { passive: true });
 window.addEventListener("resize", updateFloatingHomeButtons);
 syncPomodoroUi();
-
-const initialStudentProfile = getStoredStudentProfile();
-if (initialStudentProfile) {
-  applyStudentProfile(initialStudentProfile);
-  showView("home");
-} else {
-  showView("auth");
-}
+setAuthMode("signin");
+initializeSupabaseAuth();
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();

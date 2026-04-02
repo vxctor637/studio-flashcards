@@ -144,6 +144,30 @@ body::before {
   align-self: center;
 }
 
+.auth-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 20px 0 18px;
+}
+
+.auth-toggle-button {
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-soft);
+}
+
+.auth-toggle-button.is-active {
+  color: #fff;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  box-shadow: 0 16px 30px rgba(47, 109, 246, 0.22);
+}
+
+.auth-status-message {
+  margin-bottom: 0;
+}
+
 .hero,
 .panel,
 .tools-panel {

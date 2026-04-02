@@ -21,11 +21,19 @@ Aplicacion web para crear tarjetas de estudio desde una materia, un tema y apunt
 No pongas tu `GEMINI_API_KEY` dentro de `app.js` ni en el navegador.
 La clave debe ir en variables de entorno del servidor o de Vercel.
 
+Para el acceso con correo y contrasena ahora tambien necesitas:
+
+- `SUPABASE_URL`
+- `SUPABASE_ANON_KEY`
+
 ## Como publicarla con IA
 
 1. Sube esta carpeta a GitHub.
 2. Importa el proyecto en Vercel.
-3. En Vercel, agrega la variable de entorno `GEMINI_API_KEY`.
+3. En Vercel, agrega las variables de entorno:
+   - `GEMINI_API_KEY`
+   - `SUPABASE_URL`
+   - `SUPABASE_ANON_KEY`
 4. Publica el proyecto.
 5. Abre la URL publica desde tu telefono o compartela con otras personas.
 
