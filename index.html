@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Campus IA | Estudia con tarjetas inteligentes</title>
-    <link rel="stylesheet" href="./styles.css?v=20260402f" />
+    <link rel="stylesheet" href="./styles.css?v=20260402g" />
   </head>
   <body>
     <main class="app-shell">
@@ -42,7 +42,9 @@
           </article>
 
           <div class="drawer-links">
-            <button type="button" class="secondary drawer-link" id="open-history-button">Historial de estudio</button>
+            <button type="button" class="secondary drawer-link" id="open-history-button" data-open-view="history">
+              Historial de estudio
+            </button>
             <button type="button" class="secondary drawer-link">Biblioteca personal</button>
             <button type="button" class="secondary drawer-link">Configuracion</button>
             <button type="button" class="secondary drawer-link" id="edit-academic-profile-button">
@@ -78,19 +80,6 @@
             </form>
           </section>
 
-          <section id="drawer-history-panel" class="drawer-editor" hidden>
-            <div class="section-heading compact-heading">
-              <p class="eyebrow">Historial</p>
-              <h2>Estudio por ramo</h2>
-            </div>
-
-            <div id="history-empty-state" class="history-empty-state">
-              Cuando uses tarjetas, apuntes o quiz, aqui apareceran las sesiones agrupadas por ramo.
-            </div>
-
-            <div id="history-subjects-list" class="history-subjects-list"></div>
-            <div id="history-sessions-list" class="history-sessions-list"></div>
-          </section>
         </div>
       </aside>
 
@@ -311,6 +300,101 @@
               <button type="button" class="tool-action">Entrar al modulo</button>
             </article>
           </div>
+        </section>
+      </section>
+
+      <section class="view" id="history-view" data-view="history" hidden>
+        <section class="panel module-header">
+          <div class="module-header-row">
+            <div>
+              <p class="eyebrow">Modulo</p>
+              <h2>Historial de estudio</h2>
+            </div>
+            <div class="module-float-stack">
+              <div class="pomodoro-widget" data-pomodoro-widget>
+                <button
+                  type="button"
+                  class="secondary pomodoro-bubble"
+                  data-pomodoro-toggle
+                  aria-label="Abrir temporizador pomodoro"
+                >
+                  <span class="pomodoro-split" data-pomodoro-split>
+                    <span class="pomodoro-segment is-study" data-pomodoro-study-display>25m</span>
+                    <span class="pomodoro-divider" aria-hidden="true"></span>
+                    <span class="pomodoro-segment is-break" data-pomodoro-break-display>5m</span>
+                  </span>
+                  <span class="pomodoro-action-label" data-pomodoro-action-label hidden>Comenzar break</span>
+                </button>
+
+                <div class="pomodoro-panel" data-pomodoro-panel hidden>
+                  <div class="pomodoro-panel-grid">
+                    <label>
+                      Minutos de estudio
+                      <input type="number" min="1" max="180" step="1" value="25" data-pomodoro-study-input />
+                    </label>
+                    <label>
+                      Minutos de break
+                      <input type="number" min="1" max="60" step="1" value="5" data-pomodoro-break-input />
+                    </label>
+                  </div>
+                  <div class="pomodoro-panel-actions">
+                    <button type="button" class="pomodoro-start-button" data-pomodoro-start>
+                      Comenzar temporizador
+                    </button>
+                    <button type="button" class="secondary pomodoro-pause-button" data-pomodoro-pause hidden>
+                      Pausar temporizador
+                    </button>
+                    <button type="button" class="secondary pomodoro-stop-button" data-pomodoro-stop hidden>
+                      Detener temporizador
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <button type="button" class="secondary module-home-button" data-go-home>Volver al inicio</button>
+            </div>
+          </div>
+          <p class="module-copy">
+            Revisa tu estudio por ramo, abre cada sesion y despliega el contenido exacto generado en cada modulo.
+          </p>
+        </section>
+
+        <section class="panel history-subjects-panel">
+          <div class="section-heading compact-heading">
+            <p class="eyebrow">Ramos</p>
+            <h2>Elige que ramo revisar</h2>
+          </div>
+
+          <div id="history-empty-state" class="history-empty-state">
+            Cuando uses tarjetas, apuntes o quiz, aqui apareceran las sesiones agrupadas por ramo.
+          </div>
+
+          <div id="history-subjects-list" class="history-subjects-list"></div>
+        </section>
+
+        <section class="panel history-sessions-panel">
+          <div class="section-heading compact-heading">
+            <p class="eyebrow">Sesiones</p>
+            <h2>Tu estudio por fecha</h2>
+          </div>
+
+          <div id="history-sessions-list" class="history-sessions-list"></div>
+        </section>
+
+        <section class="panel history-detail-panel">
+          <div class="results-header">
+            <div>
+              <p class="eyebrow">Detalle</p>
+              <h2>Contenido del modulo</h2>
+            </div>
+            <button type="button" class="secondary" id="history-detail-close" hidden>Cerrar</button>
+          </div>
+
+          <div id="history-detail-empty" class="empty-state">
+            Abre un modulo dentro de una sesion para ver el contenido completo que se trabajo.
+          </div>
+
+          <article id="history-detail-content" class="history-detail-content" hidden></article>
         </section>
       </section>
 
@@ -846,6 +930,6 @@
     </template>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <script src="./app.js?v=20260402f"></script>
+    <script src="./app.js?v=20260402g"></script>
   </body>
 </html>

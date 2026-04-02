@@ -243,6 +243,15 @@ body::before {
   margin-top: 14px;
 }
 
+.history-subjects-panel,
+.history-sessions-panel {
+  align-content: start;
+}
+
+.history-detail-panel {
+  grid-column: 1 / -1;
+}
+
 .history-subject-button {
   width: 100%;
   display: inline-flex;
@@ -299,6 +308,8 @@ body::before {
 }
 
 .history-module-entry {
+  width: 100%;
+  text-align: left;
   padding: 14px 16px;
   border-radius: 18px;
   background: rgba(239, 246, 255, 0.72);
@@ -320,6 +331,68 @@ body::before {
   padding-left: 18px;
   color: var(--muted);
   line-height: 1.6;
+}
+
+.history-detail-content {
+  display: grid;
+  gap: 16px;
+}
+
+.history-detail-block {
+  padding: 20px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-soft);
+}
+
+.history-detail-block h3,
+.history-detail-block h4,
+.history-detail-block p,
+.history-detail-block ul {
+  margin: 0;
+}
+
+.history-detail-block h3 {
+  font-size: 1.15rem;
+}
+
+.history-detail-block h4 {
+  margin-top: 14px;
+  margin-bottom: 8px;
+  font-size: 1rem;
+}
+
+.history-detail-block p,
+.history-detail-block li {
+  line-height: 1.7;
+}
+
+.history-detail-block ul {
+  padding-left: 20px;
+}
+
+.history-detail-qa {
+  display: grid;
+  gap: 12px;
+}
+
+.history-detail-qa-item {
+  padding: 16px;
+  border-radius: 18px;
+  background: rgba(239, 246, 255, 0.72);
+  border: 1px solid rgba(47, 109, 246, 0.12);
+}
+
+.history-detail-qa-item strong,
+.history-detail-qa-item p {
+  display: block;
+  margin: 0;
+}
+
+.history-detail-qa-item p {
+  margin-top: 8px;
+  color: var(--muted);
 }
 
 .account-menu {
