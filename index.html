@@ -4,15 +4,13 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Campus IA | Estudia con tarjetas inteligentes</title>
-    <link rel="stylesheet" href="./styles.css?v=20260402i" />
+    <link rel="stylesheet" href="./styles.css?v=20260402j" />
   </head>
   <body>
     <main class="app-shell">
       <header id="app-topbar" class="app-topbar" hidden>
-        <button type="button" class="app-topbar-icon" id="menu-toggle-button" aria-label="Abrir menu">
-          <span></span>
-          <span></span>
-          <span></span>
+        <button type="button" class="app-user-chip app-user-chip-menu" id="menu-toggle-button" aria-label="Abrir menu de perfil">
+          <span id="app-user-initial" class="app-user-avatar">E</span>
           <span id="menu-attention-dot" class="attention-dot" hidden></span>
         </button>
 
@@ -21,11 +19,10 @@
             <p class="eyebrow">Campus IA</p>
             <strong>Tu espacio de estudio</strong>
           </div>
-          <div id="app-current-subject" class="app-current-subject" hidden>Ramo activo: Sin seleccionar</div>
         </div>
 
-        <button type="button" class="app-user-chip" id="user-menu-button" aria-label="Perfil de usuario">
-          <span id="app-user-initial" class="app-user-avatar">E</span>
+        <button type="button" class="app-current-subject app-current-subject-button" id="subject-menu-button" hidden>
+          Ramo activo: Sin seleccionar
         </button>
       </header>
 
@@ -83,18 +80,19 @@
             </form>
           </section>
 
+          <button type="button" class="secondary drawer-sign-out-button" data-sign-out>Cerrar sesion</button>
         </div>
       </aside>
 
-      <aside id="account-menu" class="account-menu" hidden>
+      <aside id="subject-menu" class="account-menu" hidden>
         <div class="account-menu-header">
-          <p class="eyebrow">Cuenta</p>
-          <h2>Tu perfil</h2>
+          <p class="eyebrow">Ramos</p>
+          <h2>Cambia tu ramo activo</h2>
         </div>
 
         <div class="account-menu-content">
-          <p class="account-menu-copy">Desde aqui iremos agregando mas opciones de cuenta.</p>
-          <button type="button" class="secondary drawer-sign-out-button" data-sign-out>Cerrar sesion</button>
+          <p class="account-menu-copy">Selecciona el ramo que quieres estudiar ahora. Todo lo nuevo se guardara en ese historial.</p>
+          <div id="subject-menu-list" class="drawer-links"></div>
         </div>
       </aside>
 
@@ -933,6 +931,6 @@
     </template>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <script src="./app.js?v=20260402i"></script>
+    <script src="./app.js?v=20260402j"></script>
   </body>
 </html>

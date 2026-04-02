@@ -7,14 +7,15 @@ const authSubmitButton = document.querySelector("#auth-submit-button");
 const signOutButtons = document.querySelectorAll("[data-sign-out]");
 const appTopbar = document.querySelector("#app-topbar");
 const appDrawer = document.querySelector("#app-drawer");
-const accountMenu = document.querySelector("#account-menu");
+const subjectMenu = document.querySelector("#subject-menu");
 const appDrawerBackdrop = document.querySelector("#app-drawer-backdrop");
 const menuToggleButton = document.querySelector("#menu-toggle-button");
 const menuAttentionDot = document.querySelector("#menu-attention-dot");
 const drawerCloseButton = document.querySelector("#drawer-close-button");
-const userMenuButton = document.querySelector("#user-menu-button");
 const appUserInitial = document.querySelector("#app-user-initial");
-const appCurrentSubject = document.querySelector("#app-current-subject");
+const subjectMenuButton = document.querySelector("#subject-menu-button");
+const appCurrentSubject = document.querySelector("#subject-menu-button");
+const subjectMenuList = document.querySelector("#subject-menu-list");
 const sessionProfileForm = document.querySelector("#session-profile-form");
 const academicTrackInput = document.querySelector("#academic-track");
 const sessionSubjectsList = document.querySelector("#session-subjects-list");
@@ -182,7 +183,7 @@ let pomodoroMenuOpen = false;
 let pomodoroAudioContext = null;
 let authenticatedUser = null;
 let isDrawerOpen = false;
-let isAccountMenuOpen = false;
+let isSubjectMenuOpen = false;
 let selectedStudySubject = "";
 let selectedHistorySubject = "";
 let selectedHistorySessionId = "";
@@ -221,7 +222,7 @@ function showView(viewName) {
   appTopbar.hidden = isAuthView;
   if (isAuthView) {
     closeAppDrawer();
-    closeAccountMenu();
+    closeSubjectMenu();
   }
 
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -230,11 +231,11 @@ function showView(viewName) {
 }
 
 function updateBodyMenuState() {
-  document.body.classList.toggle("menu-open", isDrawerOpen || isAccountMenuOpen);
+  document.body.classList.toggle("menu-open", isDrawerOpen || isSubjectMenuOpen);
 }
 
 function openAppDrawer() {
-  closeAccountMenu();
+  closeSubjectMenu();
   isDrawerOpen = true;
   appDrawer.hidden = false;
   appDrawerBackdrop.hidden = false;
@@ -252,21 +253,21 @@ function openAppDrawer() {
 function closeAppDrawer() {
   isDrawerOpen = false;
   appDrawer.hidden = true;
-  appDrawerBackdrop.hidden = !isAccountMenuOpen;
+  appDrawerBackdrop.hidden = !isSubjectMenuOpen;
   updateBodyMenuState();
 }
 
-function openAccountMenu() {
+function openSubjectMenu() {
   closeAppDrawer();
-  isAccountMenuOpen = true;
-  accountMenu.hidden = false;
+  isSubjectMenuOpen = true;
+  subjectMenu.hidden = false;
   appDrawerBackdrop.hidden = false;
   updateBodyMenuState();
 }
 
-function closeAccountMenu() {
-  isAccountMenuOpen = false;
-  accountMenu.hidden = true;
+function closeSubjectMenu() {
+  isSubjectMenuOpen = false;
+  subjectMenu.hidden = true;
   appDrawerBackdrop.hidden = !isDrawerOpen;
   updateBodyMenuState();
 }
@@ -340,6 +341,28 @@ function clearFakeSession() {
 function syncAcademicAttention() {
   menuAttentionDot.hidden = !academicAttention.menu;
   editAcademicDot.hidden = !academicAttention.edit;
+}
+
+function setSelectedStudySubject(subject, { persist = true, rerender = true } = {}) {
+  selectedStudySubject = subject || "";
+  sessionSelectedSubject.textContent = selectedStudySubject
+    ? `Ramo activo para esta sesion: ${selectedStudySubject}.`
+    : "Todavia no has seleccionado un ramo para esta sesion.";
+  syncSelectedSubjectIntoModules();
+  updateActiveSubjectChip();
+
+  Array.from(sessionSubjectButtons.querySelectorAll(".session-subject-button")).forEach((buttonNode) => {
+    buttonNode.classList.toggle("is-active", buttonNode.textContent === selectedStudySubject);
+  });
+
+  if (persist && authenticatedUser?.user_metadata) {
+    authenticatedUser.user_metadata.preferred_subject = selectedStudySubject;
+    saveCurrentFakeUser();
+  }
+
+  if (rerender) {
+    renderSubjectMenu();
+  }
 }
 
 function getStudyHistory(user) {
@@ -838,12 +861,12 @@ function renderAcademicProfile(user) {
   sessionAcademicSummary.hidden = !hasProfile;
 
   if (!hasProfile) {
-    selectedStudySubject = "";
-    updateActiveSubjectChip();
+    setSelectedStudySubject("", { persist: false });
     sessionSubjectButtons.innerHTML = "";
     sessionSelectedSubject.textContent = "Todavia no has seleccionado un ramo para esta sesion.";
     sessionSummaryCopy.textContent =
       "Completa tu carrera o curso y agrega tus ramos. Luego quedaran listos para elegir que estudiar al entrar.";
+    renderSubjectMenu();
     return;
   }
 
@@ -864,31 +887,14 @@ function renderAcademicProfile(user) {
     button.className = `session-subject-button ${subject === selectedStudySubject ? "is-active" : ""}`;
     button.textContent = subject;
 
-    button.addEventListener("click", async () => {
-      selectedStudySubject = subject;
-      Array.from(sessionSubjectButtons.querySelectorAll(".session-subject-button")).forEach((buttonNode) => {
-        buttonNode.classList.toggle("is-active", buttonNode.textContent === subject);
-      });
-      sessionSelectedSubject.textContent = `Ramo activo para esta sesion: ${selectedStudySubject}.`;
-      syncSelectedSubjectIntoModules();
-      updateActiveSubjectChip();
-
-      if (!authenticatedUser) {
-        authenticatedUser.user_metadata.preferred_subject = subject;
-        saveCurrentFakeUser();
-        return;
-      }
-
-      authenticatedUser.user_metadata.preferred_subject = subject;
-      saveCurrentFakeUser();
+    button.addEventListener("click", () => {
+      setSelectedStudySubject(subject);
     });
 
     sessionSubjectButtons.appendChild(button);
   });
 
-  sessionSelectedSubject.textContent = `Ramo activo para esta sesion: ${selectedStudySubject}.`;
-  syncSelectedSubjectIntoModules();
-  updateActiveSubjectChip();
+  setSelectedStudySubject(selectedStudySubject, { persist: false });
 }
 
 async function saveAcademicProfile({ academicTrack, subjects }) {
@@ -947,9 +953,9 @@ function applyAuthenticatedUser(user) {
   homePreviewTitle.textContent = displayName;
   homePreviewCopy.textContent = "Tu informacion queda guardada en este navegador para seguir probando funciones sin iniciar sesion real.";
   appUserInitial.textContent = firstName.charAt(0).toUpperCase();
-  updateActiveSubjectChip();
   renderAcademicProfile(user);
   renderStudyHistory(user);
+  renderSubjectMenu();
 }
 
 function updateAuthMessage(message, isError = false) {
@@ -1003,6 +1009,27 @@ function updateActiveSubjectChip() {
 
   appCurrentSubject.hidden = false;
   appCurrentSubject.textContent = `Ramo activo: ${selectedStudySubject}`;
+}
+
+function renderSubjectMenu() {
+  if (!subjectMenuList || !authenticatedUser) {
+    return;
+  }
+
+  const profile = getAcademicProfileFromUser(authenticatedUser);
+  subjectMenuList.innerHTML = "";
+
+  profile.subjects.forEach((subject) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = `secondary drawer-link ${subject === selectedStudySubject ? "is-active" : ""}`;
+    button.textContent = subject;
+    button.addEventListener("click", () => {
+      setSelectedStudySubject(subject);
+      closeSubjectMenu();
+    });
+    subjectMenuList.appendChild(button);
+  });
 }
 
 function formatPomodoroSeconds(totalSeconds) {
@@ -2294,16 +2321,17 @@ drawerCloseButton.addEventListener("click", () => {
   closeAppDrawer();
 });
 
-userMenuButton.addEventListener("click", () => {
-  if (isAccountMenuOpen) {
-    closeAccountMenu();
+subjectMenuButton.addEventListener("click", () => {
+  if (isSubjectMenuOpen) {
+    closeSubjectMenu();
   } else {
-    openAccountMenu();
+    openSubjectMenu();
   }
 });
 
 appDrawerBackdrop.addEventListener("click", () => {
   closeAppDrawer();
+  closeSubjectMenu();
 });
 
 signOutButtons.forEach((button) => {
@@ -2313,7 +2341,7 @@ signOutButtons.forEach((button) => {
     try {
       clearFakeSession();
       closeAppDrawer();
-      closeAccountMenu();
+      closeSubjectMenu();
       handleSignedOutState();
     } catch (error) {
       updateAuthMessage(error instanceof Error ? error.message : "No fue posible cerrar la sesion.", true);
@@ -2407,9 +2435,9 @@ document.addEventListener("click", (event) => {
 
   if (
     target.closest("#app-drawer") ||
-    target.closest("#account-menu") ||
+    target.closest("#subject-menu") ||
     target.closest("#menu-toggle-button") ||
-    target.closest("#user-menu-button")
+    target.closest("#subject-menu-button")
   ) {
     return;
   }
@@ -2423,8 +2451,8 @@ document.addEventListener("click", (event) => {
     closeAppDrawer();
   }
 
-  if (isAccountMenuOpen) {
-    closeAccountMenu();
+  if (isSubjectMenuOpen) {
+    closeSubjectMenu();
   }
 });
 

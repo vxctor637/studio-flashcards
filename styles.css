@@ -64,9 +64,9 @@ body::before {
   position: sticky;
   top: 18px;
   z-index: 140;
-  display: flex;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
-  justify-content: space-between;
   gap: 16px;
   margin-bottom: 18px;
   padding: 14px 18px;
@@ -80,8 +80,8 @@ body::before {
 .app-topbar-meta {
   display: grid;
   justify-items: center;
-  gap: 8px;
-  flex: 1;
+  gap: 4px;
+  min-width: 0;
 }
 
 .app-topbar-brand {
@@ -98,7 +98,6 @@ body::before {
   font-size: 1rem;
 }
 
-.app-topbar-icon,
 .app-user-chip {
   min-width: 48px;
   min-height: 48px;
@@ -107,19 +106,10 @@ body::before {
   align-items: center;
   justify-content: center;
   border-radius: 999px;
-}
-
-.app-topbar-icon {
   position: relative;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.app-topbar-icon > span:not(.attention-dot) {
-  width: 18px;
-  height: 2px;
-  border-radius: 999px;
-  background: var(--text);
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-soft);
 }
 
 .app-user-avatar {
@@ -138,8 +128,8 @@ body::before {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 34px;
-  padding: 7px 14px;
+  min-height: 42px;
+  padding: 0 16px;
   border-radius: 999px;
   background: rgba(47, 109, 246, 0.1);
   border: 1px solid rgba(47, 109, 246, 0.14);
@@ -147,6 +137,18 @@ body::before {
   font-size: 0.82rem;
   font-weight: 700;
   text-align: center;
+  box-shadow: var(--shadow-soft);
+}
+
+.app-current-subject-button {
+  justify-self: end;
+  cursor: pointer;
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+}
+
+.app-current-subject-button:hover {
+  transform: translateY(-1px);
+  border-color: rgba(47, 109, 246, 0.24);
 }
 
 .attention-dot {
@@ -231,6 +233,12 @@ body::before {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+}
+
+.drawer-link.is-active {
+  color: #fff;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  box-shadow: 0 16px 30px rgba(47, 109, 246, 0.2);
 }
 
 .drawer-editor {
@@ -455,6 +463,7 @@ body::before {
 }
 
 .history-detail-content {
+  margin-top: 18px;
   display: grid;
   gap: 16px;
 }
@@ -548,6 +557,12 @@ body::before {
 .account-menu-copy {
   color: var(--muted);
   line-height: 1.65;
+}
+
+.app-drawer .drawer-sign-out-button {
+  margin-top: 12px;
+  width: min(220px, 100%);
+  justify-self: center;
 }
 
 .app-drawer-backdrop {
