@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Campus IA | Estudia con tarjetas inteligentes</title>
-    <link rel="stylesheet" href="./styles.css?v=20260402j" />
+    <link rel="stylesheet" href="./styles.css?v=20260402k" />
   </head>
   <body>
     <main class="app-shell">
@@ -45,7 +45,9 @@
             <button type="button" class="secondary drawer-link" id="open-history-button" data-open-view="history">
               Historial de estudio
             </button>
-            <button type="button" class="secondary drawer-link">Biblioteca personal</button>
+            <button type="button" class="secondary drawer-link" id="open-analysis-button" data-open-view="analysis">
+              Analisis de estudio
+            </button>
             <button type="button" class="secondary drawer-link">Configuracion</button>
             <button type="button" class="secondary drawer-link" id="edit-academic-profile-button">
               Editar ramos y curso
@@ -298,6 +300,13 @@
               <span class="tool-state">Disponible</span>
               <h3>Quiz interactivo</h3>
               <p>Practica con preguntas de opcion multiple y detecta que temas necesitan mas refuerzo.</p>
+              <button type="button" class="tool-action">Entrar al modulo</button>
+            </article>
+
+            <article class="tool-card tool-card-active tool-card-link" data-open-view="assessment">
+              <span class="tool-state">Disponible</span>
+              <h3>Evaluacion final</h3>
+              <p>Genera una evaluacion desde tu historial o desde apuntes nuevos para medir tu nivel real.</p>
               <button type="button" class="tool-action">Entrar al modulo</button>
             </article>
           </div>
@@ -913,6 +922,234 @@
           </section>
         </section>
       </section>
+
+      <section class="view" id="assessment-view" data-view="assessment" hidden>
+        <section class="panel module-header">
+          <div class="module-header-row">
+            <div>
+              <p class="eyebrow">Modulo</p>
+              <h2>Evaluacion con IA</h2>
+            </div>
+            <div class="module-float-stack">
+              <div class="pomodoro-widget" data-pomodoro-widget>
+                <button type="button" class="secondary pomodoro-bubble" data-pomodoro-toggle aria-label="Abrir temporizador pomodoro">
+                  <span class="pomodoro-split" data-pomodoro-split>
+                    <span class="pomodoro-segment is-study" data-pomodoro-study-display>25m</span>
+                    <span class="pomodoro-divider" aria-hidden="true"></span>
+                    <span class="pomodoro-segment is-break" data-pomodoro-break-display>5m</span>
+                  </span>
+                  <span class="pomodoro-action-label" data-pomodoro-action-label hidden>Comenzar break</span>
+                </button>
+                <div class="pomodoro-panel" data-pomodoro-panel hidden>
+                  <div class="pomodoro-panel-grid">
+                    <label>Minutos de estudio<input type="number" min="1" max="180" step="1" value="25" data-pomodoro-study-input /></label>
+                    <label>Minutos de break<input type="number" min="1" max="60" step="1" value="5" data-pomodoro-break-input /></label>
+                  </div>
+                  <div class="pomodoro-panel-actions">
+                    <button type="button" class="pomodoro-start-button" data-pomodoro-start>Comenzar temporizador</button>
+                    <button type="button" class="secondary pomodoro-pause-button" data-pomodoro-pause hidden>Pausar temporizador</button>
+                    <button type="button" class="secondary pomodoro-stop-button" data-pomodoro-stop hidden>Detener temporizador</button>
+                  </div>
+                </div>
+              </div>
+              <button type="button" class="secondary module-home-button" data-go-home>Volver al inicio</button>
+            </div>
+          </div>
+          <p class="module-copy">
+            Mide tu nivel con una evaluacion basada en tu historial real de estudio o con contenido nuevo que quieras practicar.
+          </p>
+        </section>
+
+        <section class="panel form-panel" id="assessment-workspace">
+          <div class="section-heading">
+            <p class="eyebrow">Workspace</p>
+            <h2>Generador de evaluaciones</h2>
+          </div>
+
+          <div class="assessment-actions">
+            <button type="button" id="generate-history-assessment-button">Generar evaluacion segun historial de datos de estudio</button>
+          </div>
+
+          <form id="assessment-form">
+            <label for="assessment-subject">Materia</label>
+            <input id="assessment-subject" name="assessmentSubject" type="text" placeholder="Ej: Psicologia, Historia, Biologia" required />
+
+            <label for="assessment-topic">Tema</label>
+            <input id="assessment-topic" name="assessmentTopic" type="text" placeholder="Ej: Psicoanalisis, independencia, celulas" required />
+
+            <label for="assessment-notes">Apuntes del estudiante</label>
+            <textarea
+              id="assessment-notes"
+              name="assessmentNotes"
+              rows="8"
+              placeholder="Pega aqui apuntes, ideas clave y conceptos que quieras usar para construir una evaluacion."
+            ></textarea>
+
+            <div class="form-grid">
+              <div>
+                <label for="assessment-total">Cantidad de preguntas</label>
+                <select id="assessment-total" name="assessmentTotal">
+                  <option value="5" selected>5</option>
+                  <option value="8">8</option>
+                  <option value="10">10</option>
+                </select>
+              </div>
+
+              <div>
+                <label for="assessment-difficulty">Nivel</label>
+                <select id="assessment-difficulty" name="assessmentDifficulty">
+                  <option value="basico">Basico</option>
+                  <option value="intermedio" selected>Intermedio</option>
+                  <option value="avanzado">Avanzado</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="actions">
+              <button type="submit" id="generate-assessment-button">Generar evaluacion</button>
+              <button type="button" id="load-assessment-demo" class="secondary">Cargar ejemplo</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="panel summary-panel">
+          <div class="section-heading compact-heading">
+            <p class="eyebrow">Sesion</p>
+            <h2>Estado de la evaluacion</h2>
+          </div>
+          <div class="summary-row">
+            <span>Preguntas</span>
+            <strong id="assessment-count">0</strong>
+          </div>
+          <div class="summary-row">
+            <span>Progreso</span>
+            <strong id="assessment-progress-label">Sin iniciar</strong>
+          </div>
+          <div class="summary-row">
+            <span>Puntaje</span>
+            <strong id="assessment-score-label">0/0</strong>
+          </div>
+        </section>
+
+        <section class="panel results-panel">
+          <div class="results-header">
+            <div>
+              <p class="eyebrow">Evaluacion IA</p>
+              <h2>Comprueba cuanto dominaste</h2>
+            </div>
+          </div>
+
+          <p id="assessment-status-message" class="status-message">
+            Genera una evaluacion desde tu historial o desde contenido nuevo.
+          </p>
+
+          <div id="assessment-empty-state" class="empty-state">
+            Aqui aparecera tu evaluacion completa con preguntas de opcion multiple y un resumen final.
+          </div>
+
+          <section id="assessment-player" class="quiz-player" hidden>
+            <div class="quiz-meta">
+              <span id="assessment-step">Pregunta 1 de 5</span>
+              <strong id="assessment-live-score">Puntaje: 0</strong>
+            </div>
+
+            <article class="quiz-card">
+              <h3 id="assessment-question" class="quiz-question"></h3>
+              <div id="assessment-options" class="quiz-options"></div>
+            </article>
+
+            <div id="assessment-feedback" class="quiz-feedback" hidden></div>
+
+            <div class="quiz-actions">
+              <button type="button" id="next-assessment-question-button" class="secondary" hidden>Siguiente pregunta</button>
+            </div>
+          </section>
+
+          <section id="assessment-summary" class="quiz-summary" hidden>
+            <div class="quiz-summary-header">
+              <div>
+                <p class="eyebrow">Resultado</p>
+                <h3 id="assessment-summary-title">Resumen de la evaluacion</h3>
+              </div>
+              <strong id="assessment-summary-score" class="quiz-summary-score">0/0</strong>
+            </div>
+
+            <div id="assessment-summary-list" class="quiz-summary-list"></div>
+
+            <div class="quiz-actions">
+              <button type="button" id="restart-assessment-button" class="secondary">Reiniciar evaluacion</button>
+              <button type="button" id="new-assessment-button" class="secondary">Generar nueva evaluacion</button>
+            </div>
+          </section>
+        </section>
+      </section>
+
+      <section class="view" id="analysis-view" data-view="analysis" hidden>
+        <section class="panel module-header">
+          <div class="module-header-row">
+            <div>
+              <p class="eyebrow">Analisis</p>
+              <h2>Analisis de estudio</h2>
+            </div>
+            <div class="module-float-stack">
+              <div class="pomodoro-widget" data-pomodoro-widget>
+                <button type="button" class="secondary pomodoro-bubble" data-pomodoro-toggle aria-label="Abrir temporizador pomodoro">
+                  <span class="pomodoro-split" data-pomodoro-split>
+                    <span class="pomodoro-segment is-study" data-pomodoro-study-display>25m</span>
+                    <span class="pomodoro-divider" aria-hidden="true"></span>
+                    <span class="pomodoro-segment is-break" data-pomodoro-break-display>5m</span>
+                  </span>
+                  <span class="pomodoro-action-label" data-pomodoro-action-label hidden>Comenzar break</span>
+                </button>
+                <div class="pomodoro-panel" data-pomodoro-panel hidden>
+                  <div class="pomodoro-panel-grid">
+                    <label>Minutos de estudio<input type="number" min="1" max="180" step="1" value="25" data-pomodoro-study-input /></label>
+                    <label>Minutos de break<input type="number" min="1" max="60" step="1" value="5" data-pomodoro-break-input /></label>
+                  </div>
+                  <div class="pomodoro-panel-actions">
+                    <button type="button" class="pomodoro-start-button" data-pomodoro-start>Comenzar temporizador</button>
+                    <button type="button" class="secondary pomodoro-pause-button" data-pomodoro-pause hidden>Pausar temporizador</button>
+                    <button type="button" class="secondary pomodoro-stop-button" data-pomodoro-stop hidden>Detener temporizador</button>
+                  </div>
+                </div>
+              </div>
+              <button type="button" class="secondary module-home-button" data-go-home>Volver al inicio</button>
+            </div>
+          </div>
+          <p class="module-copy">
+            Mira lo que has trabajado, donde te has equivocado mas y que modulo te conviene usar para mejorar.
+          </p>
+        </section>
+
+        <section class="panel analysis-summary-panel">
+          <div class="section-heading compact-heading">
+            <p class="eyebrow">Resumen</p>
+            <h2>Panorama de tu estudio</h2>
+          </div>
+          <div id="analysis-empty-state" class="empty-state">
+            Usa los modulos del ramo activo para generar suficientes datos y aqui aparecera tu analisis.
+          </div>
+          <div id="analysis-summary-grid" class="analysis-summary-grid" hidden></div>
+        </section>
+
+        <section class="panel analysis-charts-panel">
+          <div class="section-heading compact-heading">
+            <p class="eyebrow">Graficos</p>
+            <h2>Visualiza tu rendimiento</h2>
+          </div>
+          <div id="analysis-charts" class="analysis-charts" hidden></div>
+        </section>
+
+        <section class="panel analysis-insights-panel">
+          <div class="results-header">
+            <div>
+              <p class="eyebrow">Conclusion</p>
+              <h2>Que te falta mejorar</h2>
+            </div>
+          </div>
+          <div id="analysis-insights" class="analysis-insights" hidden></div>
+        </section>
+      </section>
     </main>
 
     <template id="card-template">
@@ -931,6 +1168,6 @@
     </template>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <script src="./app.js?v=20260402j"></script>
+    <script src="./app.js?v=20260402k"></script>
   </body>
 </html>

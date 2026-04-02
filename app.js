@@ -33,6 +33,7 @@ const drawerAcademicTrackInput = document.querySelector("#drawer-academic-track"
 const drawerSubjectsList = document.querySelector("#drawer-subjects-list");
 const drawerAddSubjectButton = document.querySelector("#drawer-add-subject-button");
 const openHistoryButton = document.querySelector("#open-history-button");
+const openAnalysisButton = document.querySelector("#open-analysis-button");
 const historyEmptyState = document.querySelector("#history-empty-state");
 const historySubjectsList = document.querySelector("#history-subjects-list");
 const historySessionsList = document.querySelector("#history-sessions-list");
@@ -127,6 +128,37 @@ const quizSummaryList = document.querySelector("#quiz-summary-list");
 const restartSameQuizButton = document.querySelector("#restart-same-quiz-button");
 const newQuizButton = document.querySelector("#new-quiz-button");
 const advanceQuizButton = document.querySelector("#advance-quiz-button");
+const assessmentForm = document.querySelector("#assessment-form");
+const assessmentSubjectInput = document.querySelector("#assessment-subject");
+const assessmentTopicInput = document.querySelector("#assessment-topic");
+const assessmentNotesInput = document.querySelector("#assessment-notes");
+const assessmentTotalInput = document.querySelector("#assessment-total");
+const assessmentDifficultyInput = document.querySelector("#assessment-difficulty");
+const generateHistoryAssessmentButton = document.querySelector("#generate-history-assessment-button");
+const generateAssessmentButton = document.querySelector("#generate-assessment-button");
+const loadAssessmentDemoButton = document.querySelector("#load-assessment-demo");
+const assessmentStatusMessage = document.querySelector("#assessment-status-message");
+const assessmentEmptyState = document.querySelector("#assessment-empty-state");
+const assessmentPlayer = document.querySelector("#assessment-player");
+const assessmentStep = document.querySelector("#assessment-step");
+const assessmentLiveScore = document.querySelector("#assessment-live-score");
+const assessmentQuestion = document.querySelector("#assessment-question");
+const assessmentOptions = document.querySelector("#assessment-options");
+const assessmentFeedback = document.querySelector("#assessment-feedback");
+const nextAssessmentQuestionButton = document.querySelector("#next-assessment-question-button");
+const assessmentSummary = document.querySelector("#assessment-summary");
+const assessmentSummaryTitle = document.querySelector("#assessment-summary-title");
+const assessmentSummaryScore = document.querySelector("#assessment-summary-score");
+const assessmentSummaryList = document.querySelector("#assessment-summary-list");
+const restartAssessmentButton = document.querySelector("#restart-assessment-button");
+const newAssessmentButton = document.querySelector("#new-assessment-button");
+const assessmentCount = document.querySelector("#assessment-count");
+const assessmentProgressLabel = document.querySelector("#assessment-progress-label");
+const assessmentScoreLabel = document.querySelector("#assessment-score-label");
+const analysisEmptyState = document.querySelector("#analysis-empty-state");
+const analysisSummaryGrid = document.querySelector("#analysis-summary-grid");
+const analysisCharts = document.querySelector("#analysis-charts");
+const analysisInsights = document.querySelector("#analysis-insights");
 const template = document.querySelector("#card-template");
 
 const subjectSuggestions = {
@@ -178,6 +210,13 @@ let currentQuizResults = [];
 let quizCurrentMode = "full";
 let lastQuizRequestData = null;
 let quizTransitionTimeout = null;
+let currentAssessment = [];
+let currentAssessmentIndex = 0;
+let currentAssessmentScore = 0;
+let currentAssessmentAnswered = false;
+let currentAssessmentResults = [];
+let lastAssessmentRequestData = null;
+let currentAssessmentHistoryEntryId = "";
 let pomodoroInterval = null;
 let pomodoroMenuOpen = false;
 let pomodoroAudioContext = null;
@@ -363,6 +402,8 @@ function setSelectedStudySubject(subject, { persist = true, rerender = true } = 
   if (rerender) {
     renderSubjectMenu();
   }
+
+  renderStudyAnalysis();
 }
 
 function getStudyHistory(user) {
@@ -722,9 +763,9 @@ function renderHistoryDetail(entry) {
         });
       }
     });
-  } else if (detailType === "quiz") {
+  } else if (detailType === "quiz" || detailType === "assessment") {
     const scoreLine = document.createElement("h4");
-    scoreLine.textContent = `Puntaje final: ${entry.details.score || "0/0"}`;
+    scoreLine.textContent = `${detailType === "assessment" ? "Puntaje de evaluacion" : "Puntaje final"}: ${entry.details.score || "0/0"}`;
     wrapper.appendChild(scoreLine);
 
     const quizList = document.createElement("div");
@@ -836,6 +877,10 @@ function syncSelectedSubjectIntoModules() {
 
   if (!quizSubjectInput.value.trim()) {
     quizSubjectInput.value = selectedStudySubject;
+  }
+
+  if (assessmentSubjectInput && !assessmentSubjectInput.value.trim()) {
+    assessmentSubjectInput.value = selectedStudySubject;
   }
 }
 
@@ -956,6 +1001,7 @@ function applyAuthenticatedUser(user) {
   renderAcademicProfile(user);
   renderStudyHistory(user);
   renderSubjectMenu();
+  renderStudyAnalysis();
 }
 
 function updateAuthMessage(message, isError = false) {
@@ -1603,6 +1649,43 @@ async function requestAiQuiz(payload) {
   }
 }
 
+async function requestAiAssessment(payload) {
+  try {
+    const response = await fetch("/api/flashcards", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        ...payload,
+        tool: "assessment"
+      })
+    });
+
+    if (!response.ok) {
+      const data = await response.json().catch(() => null);
+      const statusHint =
+        response.status === 404
+          ? "La ruta de backend no existe en este entorno. Abre la app desde Vercel o desde un servidor con backend."
+          : "";
+
+      throw new Error(
+        data?.error || statusHint || `No fue posible generar la evaluacion con IA. Codigo HTTP: ${response.status}.`
+      );
+    }
+
+    return response.json();
+  } catch (error) {
+    if (error instanceof TypeError) {
+      throw new Error(
+        "No se pudo conectar con el backend de IA. Si abriste la app localmente sin Vercel o sin servidor API, la IA no puede responder."
+      );
+    }
+
+    throw error;
+  }
+}
+
 function addConceptInput(value = "") {
   conceptCount += 1;
   const conceptRow = document.createElement("div");
@@ -1654,6 +1737,27 @@ function normalizeQuizResponse(result, requestData) {
     title: result.quizTitle || `${requestData.topic} en ${requestData.subject}`,
     questions,
     model: result.model
+  };
+}
+
+function normalizeAssessmentResponse(result, requestData) {
+  if (!result || !Array.isArray(result.questions)) {
+    throw new Error("La respuesta de la IA no vino en formato de evaluacion.");
+  }
+
+  const normalizedQuiz = normalizeQuizResponse(
+    {
+      quizTitle: result.assessmentTitle || result.quizTitle,
+      questions: result.questions,
+      model: result.model
+    },
+    requestData
+  );
+
+  return {
+    title: normalizedQuiz.title,
+    questions: normalizedQuiz.questions,
+    model: normalizedQuiz.model
   };
 }
 
@@ -1993,6 +2097,435 @@ function prepareRetryIncorrectQuestions() {
   renderQuizQuestion();
 }
 
+function getEntriesForSubject(user, subject) {
+  const history = getStudyHistory(user);
+  return history.flatMap((session) =>
+    (session.entries || [])
+      .filter((entry) => !subject || entry.subject === subject)
+      .map((entry) => ({
+        ...entry,
+        sessionId: session.id,
+        sessionNumber: session.number,
+        sessionStartedAt: session.startedAt
+      }))
+  );
+}
+
+function buildHistoryAssessmentContext(subject) {
+  const entries = getEntriesForSubject(authenticatedUser, subject);
+
+  return entries
+    .map((entry) => {
+      if (entry.details?.type === "flashcards") {
+        const cardsText = (entry.details.cards || [])
+          .map((card) => `Pregunta: ${card.question}\nRespuesta: ${card.answer}`)
+          .join("\n");
+        return `Modulo: Tarjetas\nTema: ${entry.topic || subject}\n${cardsText}`;
+      }
+
+      if (entry.details?.type === "notes") {
+        const notesText = (entry.details.sections || [])
+          .map((section) => `${section.heading}:\n${(section.items || []).join("\n")}`)
+          .join("\n\n");
+        return `Modulo: Apuntes\nTema: ${entry.topic || subject}\n${notesText}`;
+      }
+
+      if (entry.details?.type === "quiz" || entry.details?.type === "assessment") {
+        const questionText = (entry.details.questions || [])
+          .map((question) => `${question.question}\n${question.result}\nRespuesta correcta: ${question.correctAnswer}`)
+          .join("\n");
+        return `Modulo: ${entry.moduleName}\nTema: ${entry.topic || subject}\n${questionText}`;
+      }
+
+      return `Modulo: ${entry.moduleName}\nTema: ${entry.topic || subject}\n${(entry.summaryLines || []).join("\n")}`;
+    })
+    .join("\n\n");
+}
+
+function createEmptyAssessmentResult() {
+  return {
+    selectedIndex: -1,
+    correct: false
+  };
+}
+
+function updateAssessmentUiState({ message, loading = false }) {
+  assessmentStatusMessage.textContent = message;
+  generateAssessmentButton.textContent = loading ? "Generando..." : "Generar evaluacion";
+  generateAssessmentButton.disabled = loading;
+  generateHistoryAssessmentButton.disabled = loading;
+}
+
+function updateAssessmentScoreboard() {
+  assessmentCount.textContent = String(currentAssessment.length);
+  assessmentScoreLabel.textContent = `${currentAssessmentScore}/${currentAssessment.length || 0}`;
+  assessmentLiveScore.textContent = `Puntaje: ${currentAssessmentScore}`;
+  assessmentProgressLabel.textContent =
+    currentAssessment.length > 0
+      ? `${Math.min(currentAssessmentIndex + 1, currentAssessment.length)}/${currentAssessment.length}`
+      : "Sin iniciar";
+}
+
+function renderAssessmentQuestion() {
+  if (currentAssessment.length === 0) {
+    return;
+  }
+
+  const questionData = currentAssessment[currentAssessmentIndex];
+  assessmentStep.textContent = `Pregunta ${currentAssessmentIndex + 1} de ${currentAssessment.length}`;
+  assessmentQuestion.textContent = questionData.question;
+  assessmentOptions.innerHTML = "";
+  assessmentFeedback.hidden = true;
+  assessmentFeedback.textContent = "";
+  nextAssessmentQuestionButton.hidden = true;
+  currentAssessmentAnswered = false;
+
+  questionData.options.forEach((option, index) => {
+    const optionButton = document.createElement("button");
+    optionButton.type = "button";
+    optionButton.className = "quiz-option";
+    optionButton.textContent = option;
+    optionButton.addEventListener("click", () => {
+      if (currentAssessmentAnswered) {
+        return;
+      }
+
+      currentAssessmentAnswered = true;
+      const isCorrect = index === questionData.correctIndex;
+      currentAssessmentResults[currentAssessmentIndex] = {
+        selectedIndex: index,
+        correct: isCorrect
+      };
+
+      Array.from(assessmentOptions.children).forEach((buttonNode, buttonIndex) => {
+        buttonNode.disabled = true;
+        buttonNode.classList.toggle("is-correct", buttonIndex === questionData.correctIndex);
+        buttonNode.classList.toggle("is-incorrect", buttonIndex === index && !isCorrect);
+      });
+
+      if (isCorrect) {
+        currentAssessmentScore += 1;
+      }
+
+      updateAssessmentScoreboard();
+      assessmentFeedback.hidden = false;
+      assessmentFeedback.textContent = isCorrect
+        ? `Correcto. ${questionData.explanation}`
+        : `Incorrecto. ${questionData.explanation}`;
+
+      if (currentAssessmentIndex < currentAssessment.length - 1) {
+        nextAssessmentQuestionButton.hidden = false;
+      } else {
+        window.setTimeout(() => {
+          renderAssessmentSummary();
+        }, 900);
+      }
+    });
+
+    assessmentOptions.appendChild(optionButton);
+  });
+}
+
+function startAssessment(assessmentData) {
+  currentAssessment = assessmentData.questions.map((question) => ({ ...question }));
+  currentAssessmentIndex = 0;
+  currentAssessmentScore = 0;
+  currentAssessmentResults = currentAssessment.map(() => createEmptyAssessmentResult());
+  assessmentEmptyState.hidden = true;
+  assessmentPlayer.hidden = false;
+  assessmentSummary.hidden = true;
+  updateAssessmentScoreboard();
+  renderAssessmentQuestion();
+}
+
+function renderAssessmentSummary() {
+  const totalQuestions = currentAssessment.length;
+  const correctAnswers = currentAssessmentResults.filter((result) => result.correct).length;
+  currentAssessmentScore = correctAnswers;
+  updateAssessmentScoreboard();
+
+  assessmentPlayer.hidden = true;
+  assessmentSummary.hidden = false;
+  assessmentSummaryTitle.textContent =
+    correctAnswers === totalQuestions ? "Excelente, aprobaste la evaluacion" : "Resumen final de la evaluacion";
+  assessmentSummaryScore.textContent = `${correctAnswers}/${totalQuestions}`;
+  assessmentSummaryList.innerHTML = "";
+
+  currentAssessment.forEach((question, index) => {
+    const result = currentAssessmentResults[index] || createEmptyAssessmentResult();
+    const itemNode = document.createElement("article");
+    itemNode.className = `quiz-summary-item ${result.correct ? "is-correct" : "is-incorrect"}`;
+
+    const titleNode = document.createElement("h4");
+    titleNode.textContent = `${index + 1}. ${question.question}`;
+    const statusNode = document.createElement("p");
+    statusNode.textContent = result.correct ? "Resultado: correcta." : "Resultado: incorrecta.";
+    const userAnswerNode = document.createElement("p");
+    userAnswerNode.textContent =
+      result.selectedIndex >= 0
+        ? `Tu respuesta: ${question.options[result.selectedIndex]}`
+        : "Tu respuesta: sin respuesta registrada";
+    const answerNode = document.createElement("p");
+    answerNode.textContent = `Respuesta correcta: ${question.options[question.correctIndex]}`;
+
+    itemNode.append(titleNode, statusNode, userAnswerNode, answerNode);
+    assessmentSummaryList.appendChild(itemNode);
+  });
+
+  updateStudyHistoryEntry(
+    currentAssessmentHistoryEntryId,
+    [
+      `Nivel: ${lastAssessmentRequestData?.difficulty || "intermedio"}`,
+      `Preguntas generadas: ${currentAssessment.length}`,
+      `Puntaje final: ${correctAnswers}/${totalQuestions}`,
+      `Tema trabajado: ${lastAssessmentRequestData?.topic || "Evaluacion general"}`
+    ],
+    {
+      type: "assessment",
+      score: `${correctAnswers}/${totalQuestions}`,
+      questions: currentAssessment.map((question, index) => {
+        const result = currentAssessmentResults[index] || createEmptyAssessmentResult();
+        return {
+          question: `${index + 1}. ${question.question}`,
+          result: result.correct ? "Resultado: correcta." : "Resultado: incorrecta.",
+          correctAnswer: question.options[question.correctIndex]
+        };
+      })
+    }
+  );
+}
+
+function buildAnalysisData(user, subject) {
+  const entries = getEntriesForSubject(user, subject);
+  const sessions = new Set(entries.map((entry) => entry.sessionId));
+  const moduleUsage = {
+    flashcards: 0,
+    notes: 0,
+    quiz: 0,
+    assessment: 0
+  };
+  const topicUsage = new Map();
+  let flashcardTotal = 0;
+  let notesWordCount = 0;
+  let answeredQuestions = 0;
+  let incorrectAnswers = 0;
+  let correctedAnswers = 0;
+
+  entries.forEach((entry) => {
+    const topicKey = entry.topic || entry.subject;
+    topicUsage.set(topicKey, (topicUsage.get(topicKey) || 0) + 1);
+
+    if (entry.details?.type === "flashcards") {
+      moduleUsage.flashcards += 1;
+      flashcardTotal += (entry.details.cards || []).length;
+    }
+
+    if (entry.details?.type === "notes") {
+      moduleUsage.notes += 1;
+      notesWordCount += (entry.details.sections || []).reduce(
+        (total, section) => total + (section.items || []).reduce((sum, item) => sum + countWords(item), 0),
+        0
+      );
+    }
+
+    if (entry.details?.type === "quiz" || entry.details?.type === "assessment") {
+      if (entry.details.type === "quiz") {
+        moduleUsage.quiz += 1;
+      } else {
+        moduleUsage.assessment += 1;
+      }
+
+      (entry.details.questions || []).forEach((question) => {
+        answeredQuestions += 1;
+        if (String(question.result).includes("incorrecta")) {
+          incorrectAnswers += 1;
+        }
+        if (String(question.result).includes("correcta en 2") || String(question.result).includes("correcta en 3")) {
+          correctedAnswers += 1;
+        }
+      });
+    }
+  });
+
+  const strongestTopics = Array.from(topicUsage.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([topic]) => topic);
+
+  return {
+    entries,
+    sessions: sessions.size,
+    moduleUsage,
+    flashcardTotal,
+    notesWordCount,
+    answeredQuestions,
+    incorrectAnswers,
+    correctedAnswers,
+    strongestTopics
+  };
+}
+
+function getRecommendedModule(data) {
+  if (data.incorrectAnswers >= 4) {
+    return "Generador de apuntes";
+  }
+
+  if (data.flashcardTotal < 8) {
+    return "Tarjetas de estudio";
+  }
+
+  if (data.moduleUsage.quiz + data.moduleUsage.assessment < 2) {
+    return "Quiz interactivo";
+  }
+
+  return "Evaluacion final";
+}
+
+function getAnalysisSummaryLines(data, subject) {
+  const accuracy =
+    data.answeredQuestions > 0
+      ? Math.round(((data.answeredQuestions - data.incorrectAnswers) / data.answeredQuestions) * 100)
+      : 0;
+  const weakArea =
+    data.incorrectAnswers > 0
+      ? "Te conviene reforzar comprension profunda y precision al responder."
+      : "Tu rendimiento se ve estable en el ramo activo.";
+
+  return [
+    `Ramo analizado: ${subject || "Sin ramo activo"}.`,
+    `Has acumulado ${data.sessions} sesiones y ${data.entries.length} registros de estudio en este ramo.`,
+    `Tu precision general en preguntas evaluables es de ${accuracy}%.`,
+    weakArea,
+    `El mejor modulo para avanzar ahora es ${getRecommendedModule(data)}.`
+  ];
+}
+
+function renderAnalysisBars(container, title, items, total, colorClass = "") {
+  const card = document.createElement("article");
+  card.className = "analysis-chart-card";
+  const heading = document.createElement("h3");
+  heading.textContent = title;
+  card.appendChild(heading);
+
+  items.forEach((item) => {
+    const row = document.createElement("div");
+    row.className = "analysis-bar-row";
+    const label = document.createElement("div");
+    label.className = "analysis-bar-label";
+    label.innerHTML = `<span>${item.label}</span><strong>${item.value}</strong>`;
+    const track = document.createElement("div");
+    track.className = "analysis-bar-track";
+    const fill = document.createElement("span");
+    fill.className = `analysis-bar-fill ${colorClass}`.trim();
+    fill.style.width = `${total > 0 ? Math.max((item.value / total) * 100, 8) : 0}%`;
+    track.appendChild(fill);
+    row.append(label, track);
+    card.appendChild(row);
+  });
+
+  container.appendChild(card);
+}
+
+function renderStudyAnalysis() {
+  if (!authenticatedUser || !selectedStudySubject) {
+    analysisEmptyState.hidden = false;
+    analysisSummaryGrid.hidden = true;
+    analysisCharts.hidden = true;
+    analysisInsights.hidden = true;
+    analysisSummaryGrid.innerHTML = "";
+    analysisCharts.innerHTML = "";
+    analysisInsights.innerHTML = "";
+    return;
+  }
+
+  const data = buildAnalysisData(authenticatedUser, selectedStudySubject);
+
+  if (data.entries.length === 0) {
+    analysisEmptyState.hidden = false;
+    analysisSummaryGrid.hidden = true;
+    analysisCharts.hidden = true;
+    analysisInsights.hidden = true;
+    analysisSummaryGrid.innerHTML = "";
+    analysisCharts.innerHTML = "";
+    analysisInsights.innerHTML = "";
+    return;
+  }
+
+  analysisEmptyState.hidden = true;
+  analysisSummaryGrid.hidden = false;
+  analysisCharts.hidden = false;
+  analysisInsights.hidden = false;
+  analysisSummaryGrid.innerHTML = "";
+  analysisCharts.innerHTML = "";
+  analysisInsights.innerHTML = "";
+
+  const summaryCards = [
+    { label: "Sesiones", value: data.sessions },
+    { label: "Registros", value: data.entries.length },
+    { label: "Errores", value: data.incorrectAnswers },
+    { label: "Modulo recomendado", value: getRecommendedModule(data) }
+  ];
+
+  summaryCards.forEach((item) => {
+    const card = document.createElement("article");
+    card.className = "analysis-summary-card";
+    card.innerHTML = `<span>${item.label}</span><strong>${item.value}</strong>`;
+    analysisSummaryGrid.appendChild(card);
+  });
+
+  renderAnalysisBars(
+    analysisCharts,
+    "Uso por modulo",
+    [
+      { label: "Tarjetas", value: data.moduleUsage.flashcards },
+      { label: "Apuntes", value: data.moduleUsage.notes },
+      { label: "Quiz", value: data.moduleUsage.quiz },
+      { label: "Evaluacion", value: data.moduleUsage.assessment }
+    ],
+    Math.max(...Object.values(data.moduleUsage), 1)
+  );
+
+  renderAnalysisBars(
+    analysisCharts,
+    "Rendimiento en preguntas",
+    [
+      { label: "Respondidas", value: data.answeredQuestions },
+      { label: "Incorrectas", value: data.incorrectAnswers },
+      { label: "Corregidas luego", value: data.correctedAnswers }
+    ],
+    Math.max(data.answeredQuestions, 1),
+    "is-accent"
+  );
+
+  const insightBox = document.createElement("article");
+  insightBox.className = "analysis-insight-card";
+  const insightTitle = document.createElement("h3");
+  insightTitle.textContent = "Resumen de mejora";
+  const list = document.createElement("ul");
+  getAnalysisSummaryLines(data, selectedStudySubject).forEach((line) => {
+    const item = document.createElement("li");
+    item.textContent = line;
+    list.appendChild(item);
+  });
+  insightBox.append(insightTitle, list);
+
+  const topicsBox = document.createElement("article");
+  topicsBox.className = "analysis-insight-card";
+  const topicsTitle = document.createElement("h3");
+  topicsTitle.textContent = "Temas mas trabajados";
+  const topicsList = document.createElement("ul");
+  (data.strongestTopics.length > 0 ? data.strongestTopics : ["Todavia no hay temas suficientes para analizar."]).forEach(
+    (topic) => {
+      const item = document.createElement("li");
+      item.textContent = topic;
+      topicsList.appendChild(item);
+    }
+  );
+  topicsBox.append(topicsTitle, topicsList);
+
+  analysisInsights.append(insightBox, topicsBox);
+}
+
 function getKeyConcepts() {
   return Array.from(keyConceptsList.querySelectorAll('input[name="keyConcept"]'))
     .map((input) => input.value.trim())
@@ -2126,6 +2659,31 @@ function buildLocalSummary({ subject, topic, keyConcepts, notes }) {
   };
 }
 
+function buildFallbackAssessment({ subject, topic, notes, assessmentTotal }) {
+  return buildFallbackQuiz({
+    subject,
+    topic,
+    notes,
+    quizTotal: assessmentTotal
+  });
+}
+
+function resetAssessmentResultsView() {
+  assessmentEmptyState.hidden = false;
+  assessmentPlayer.hidden = true;
+  assessmentSummary.hidden = true;
+  assessmentSummaryList.innerHTML = "";
+  assessmentOptions.innerHTML = "";
+  assessmentFeedback.hidden = true;
+  assessmentFeedback.textContent = "";
+  currentAssessment = [];
+  currentAssessmentIndex = 0;
+  currentAssessmentScore = 0;
+  currentAssessmentResults = [];
+  currentAssessmentHistoryEntryId = "";
+  updateAssessmentScoreboard();
+}
+
 async function handlePdfSelection(file) {
   if (!file) {
     updatePdfStatus("Puedes pegar apuntes, subir un PDF o combinar ambas opciones.");
@@ -2217,6 +2775,14 @@ openViewButtons.forEach((button) => {
 
     if (targetView) {
       showView(targetView);
+
+      if (targetView === "history" && authenticatedUser) {
+        renderStudyHistory(authenticatedUser);
+      }
+
+      if (targetView === "analysis") {
+        renderStudyAnalysis();
+      }
     }
   });
 });
@@ -2281,6 +2847,15 @@ openHistoryButton.addEventListener("click", () => {
     renderStudyHistory(authenticatedUser);
   }
 });
+
+if (openAnalysisButton) {
+  openAnalysisButton.addEventListener("click", () => {
+    drawerAcademicEditor.hidden = true;
+    closeAppDrawer();
+    showView("analysis");
+    renderStudyAnalysis();
+  });
+}
 
 historyDetailCloseButton.addEventListener("click", () => {
   selectedHistoryEntryId = "";
@@ -2810,4 +3385,137 @@ La segunda topica distingue ello, yo y superyo.
 Los mecanismos de defensa ayudan a manejar conflictos internos y ansiedad.`;
   quizTotalInput.value = "5";
   quizDifficultyInput.value = "intermedio";
+});
+
+nextAssessmentQuestionButton.addEventListener("click", () => {
+  if (currentAssessmentIndex < currentAssessment.length - 1) {
+    currentAssessmentIndex += 1;
+    updateAssessmentScoreboard();
+    renderAssessmentQuestion();
+  }
+});
+
+restartAssessmentButton.addEventListener("click", () => {
+  if (lastAssessmentRequestData) {
+    assessmentForm.requestSubmit();
+  }
+});
+
+newAssessmentButton.addEventListener("click", () => {
+  resetAssessmentResultsView();
+  updateAssessmentUiState({
+    message: "Prepara una nueva evaluacion para volver a medir tu nivel."
+  });
+});
+
+assessmentForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  const subject = assessmentSubjectInput.value.trim();
+  const topic = assessmentTopicInput.value.trim();
+  const notes = assessmentNotesInput.value.trim();
+  const assessmentTotal = Number(assessmentTotalInput.value);
+  const difficulty = assessmentDifficultyInput.value;
+  const requestData = { subject, topic, notes, assessmentTotal, difficulty };
+  lastAssessmentRequestData = requestData;
+
+  if (!subject) {
+    assessmentSubjectInput.focus();
+    return;
+  }
+
+  if (!topic) {
+    assessmentTopicInput.focus();
+    return;
+  }
+
+  updateAssessmentUiState({
+    message: "La app esta construyendo una evaluacion completa con IA.",
+    loading: true
+  });
+
+  try {
+    const result = await requestAiAssessment(requestData);
+    const normalizedAssessment = normalizeAssessmentResponse(result, requestData);
+    currentAssessmentHistoryEntryId = addStudyHistoryEntry({
+      moduleName: "Evaluacion final",
+      subject,
+      topic,
+      summaryLines: [
+        "Modo: IA activa",
+        `Nivel: ${difficulty}`,
+        `Preguntas solicitadas: ${assessmentTotal}`,
+        `Fuente: ${notes ? "Apuntes del estudiante" : "Evaluacion guiada"}`
+      ],
+      details: {
+        type: "assessment",
+        score: "Pendiente",
+        questions: []
+      }
+    });
+    startAssessment(normalizedAssessment);
+    updateAssessmentUiState({
+      message: `La evaluacion fue generada con IA y ya esta lista para responder. Modelo: ${result.model || "Gemini"}.`
+    });
+  } catch (error) {
+    currentAssessmentHistoryEntryId = addStudyHistoryEntry({
+      moduleName: "Evaluacion final",
+      subject,
+      topic,
+      summaryLines: [
+        "Modo: Fallback local",
+        `Nivel: ${difficulty}`,
+        `Preguntas solicitadas: ${assessmentTotal}`,
+        `Detalle: ${error instanceof Error ? error.message : "Error desconocido."}`
+      ],
+      details: {
+        type: "assessment",
+        score: "Pendiente",
+        questions: []
+      }
+    });
+    startAssessment(buildFallbackAssessment(requestData));
+    updateAssessmentUiState({
+      message: `La IA no respondio correctamente. Se genero una evaluacion local. Detalle: ${error instanceof Error ? error.message : "Error desconocido."}`
+    });
+  } finally {
+    generateAssessmentButton.disabled = false;
+    generateHistoryAssessmentButton.disabled = false;
+    generateAssessmentButton.textContent = "Generar evaluacion";
+  }
+});
+
+generateHistoryAssessmentButton.addEventListener("click", async () => {
+  if (!authenticatedUser || !selectedStudySubject) {
+    updateAssessmentUiState({
+      message: "Primero selecciona un ramo activo para generar una evaluacion desde el historial."
+    });
+    return;
+  }
+
+  const historyNotes = buildHistoryAssessmentContext(selectedStudySubject);
+
+  if (!historyNotes.trim()) {
+    updateAssessmentUiState({
+      message: "Todavia no hay suficiente historial en este ramo para construir una evaluacion."
+    });
+    return;
+  }
+
+  assessmentSubjectInput.value = selectedStudySubject;
+  assessmentTopicInput.value = `Evaluacion integral de ${selectedStudySubject}`;
+  assessmentNotesInput.value = historyNotes;
+  assessmentForm.requestSubmit();
+});
+
+loadAssessmentDemoButton.addEventListener("click", () => {
+  assessmentSubjectInput.value = "Psicologia";
+  assessmentTopicInput.value = "Psicoanalisis";
+  assessmentNotesInput.value = `Sigmund Freud desarrollo el psicoanalisis como un metodo clinico y una teoria sobre el funcionamiento de la mente.
+El inconsciente influye en la conducta humana y en los conflictos internos.
+La primera topica distingue consciente, preconsciente e inconsciente.
+La segunda topica organiza ello, yo y superyo.
+Los mecanismos de defensa buscan reducir la ansiedad y proteger al yo.`;
+  assessmentTotalInput.value = "5";
+  assessmentDifficultyInput.value = "intermedio";
 });
