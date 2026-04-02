@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Campus IA | Estudia con tarjetas inteligentes</title>
-    <link rel="stylesheet" href="./styles.css?v=20260402a" />
+    <link rel="stylesheet" href="./styles.css?v=20260402c" />
   </head>
   <body>
     <main class="app-shell">
@@ -13,6 +13,7 @@
           <span></span>
           <span></span>
           <span></span>
+          <span id="menu-attention-dot" class="attention-dot" hidden></span>
         </button>
 
         <div class="app-topbar-brand">
@@ -46,6 +47,7 @@
             <button type="button" class="secondary drawer-link">Configuracion</button>
             <button type="button" class="secondary drawer-link" id="edit-academic-profile-button">
               Editar ramos y curso
+              <span id="edit-academic-dot" class="attention-dot attention-dot-inline" hidden></span>
             </button>
           </div>
 
@@ -124,8 +126,7 @@
             </div>
 
             <div class="auth-toggle">
-              <button type="button" class="auth-toggle-button is-active" id="auth-signin-tab">Iniciar sesion</button>
-              <button type="button" class="auth-toggle-button" id="auth-signup-tab">Crear cuenta</button>
+              <button type="button" class="auth-toggle-button is-active">Modo rapido</button>
             </div>
 
             <form id="auth-form">
@@ -136,30 +137,11 @@
                 type="text"
                 placeholder="Ej: Valentina Soto"
                 autocomplete="name"
-              />
-
-              <label for="auth-email">Correo</label>
-              <input
-                id="auth-email"
-                name="authEmail"
-                type="email"
-                placeholder="tucorreo@ejemplo.com"
-                autocomplete="email"
-                required
-              />
-
-              <label for="auth-password">Contrasena</label>
-              <input
-                id="auth-password"
-                name="authPassword"
-                type="password"
-                placeholder="Minimo 6 caracteres"
-                autocomplete="current-password"
                 required
               />
 
               <p id="auth-status-message" class="status-message auth-status-message">
-                Inicia sesion con tu cuenta o crea una nueva para entrar siempre a tu espacio.
+                Escribe un nombre y entra a una sesion ficticia guardada en este navegador para probar funciones rapidamente.
               </p>
 
               <button type="submit" id="auth-submit-button">Entrar a mi espacio</button>
@@ -196,17 +178,6 @@
                 <span id="home-preview-tag" class="preview-tag">Listo para usar</span>
                 <strong id="home-preview-title">Tarjetas y apuntes</strong>
                 <p id="home-preview-copy">Accede a cada modulo por separado para mantener una experiencia mas limpia.</p>
-              </div>
-
-              <div class="preview-metrics">
-                <div>
-                  <span>Herramientas</span>
-                  <strong>3 activas</strong>
-                </div>
-                <div>
-                  <span>Enfoque</span>
-                  <strong>Estudio guiado</strong>
-                </div>
               </div>
 
               <section class="session-academic-panel">
@@ -861,7 +832,6 @@
     </template>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="./app.js?v=20260402a"></script>
+    <script src="./app.js?v=20260402c"></script>
   </body>
 </html>

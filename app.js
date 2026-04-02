@@ -2,11 +2,7 @@ const form = document.querySelector("#flashcard-form");
 const authForm = document.querySelector("#auth-form");
 const authFullNameLabel = document.querySelector('label[for="auth-full-name"]');
 const authFullNameInput = document.querySelector("#auth-full-name");
-const authEmailInput = document.querySelector("#auth-email");
-const authPasswordInput = document.querySelector("#auth-password");
 const authStatusMessage = document.querySelector("#auth-status-message");
-const authSignInTabButton = document.querySelector("#auth-signin-tab");
-const authSignUpTabButton = document.querySelector("#auth-signup-tab");
 const authSubmitButton = document.querySelector("#auth-submit-button");
 const signOutButtons = document.querySelectorAll("[data-sign-out]");
 const appTopbar = document.querySelector("#app-topbar");
@@ -14,6 +10,7 @@ const appDrawer = document.querySelector("#app-drawer");
 const accountMenu = document.querySelector("#account-menu");
 const appDrawerBackdrop = document.querySelector("#app-drawer-backdrop");
 const menuToggleButton = document.querySelector("#menu-toggle-button");
+const menuAttentionDot = document.querySelector("#menu-attention-dot");
 const drawerCloseButton = document.querySelector("#drawer-close-button");
 const userMenuButton = document.querySelector("#user-menu-button");
 const appUserInitial = document.querySelector("#app-user-initial");
@@ -27,6 +24,7 @@ const sessionSummaryCopy = document.querySelector("#session-summary-copy");
 const sessionSubjectButtons = document.querySelector("#session-subject-buttons");
 const sessionSelectedSubject = document.querySelector("#session-selected-subject");
 const editAcademicProfileButton = document.querySelector("#edit-academic-profile-button");
+const editAcademicDot = document.querySelector("#edit-academic-dot");
 const drawerAcademicEditor = document.querySelector("#drawer-academic-editor");
 const drawerAcademicForm = document.querySelector("#drawer-academic-form");
 const drawerAcademicTrackInput = document.querySelector("#drawer-academic-track");
@@ -173,12 +171,14 @@ let quizTransitionTimeout = null;
 let pomodoroInterval = null;
 let pomodoroMenuOpen = false;
 let pomodoroAudioContext = null;
-let supabaseClient = null;
-let authMode = "signin";
 let authenticatedUser = null;
 let isDrawerOpen = false;
 let isAccountMenuOpen = false;
 let selectedStudySubject = "";
+let academicAttention = {
+  menu: false,
+  edit: false
+};
 const pomodoroState = {
   studyMinutes: 25,
   breakMinutes: 5,
@@ -188,6 +188,8 @@ const pomodoroState = {
 
 const PDF_TEXT_LIMIT = 18000;
 const MIN_STUDY_NOTE_WORDS = 500;
+const FAKE_SESSION_KEY = "campusia.fakeSession";
+const FAKE_PROFILES_KEY = "campusia.fakeProfiles";
 
 if (window.pdfjsLib) {
   window.pdfjsLib.GlobalWorkerOptions.workerSrc =
@@ -213,17 +215,31 @@ function showView(viewName) {
   syncPomodoroUi();
 }
 
+function updateBodyMenuState() {
+  document.body.classList.toggle("menu-open", isDrawerOpen || isAccountMenuOpen);
+}
+
 function openAppDrawer() {
   closeAccountMenu();
   isDrawerOpen = true;
   appDrawer.hidden = false;
   appDrawerBackdrop.hidden = false;
+  academicAttention.menu = false;
+  if (authenticatedUser?.user_metadata) {
+    authenticatedUser.user_metadata.academic_attention = {
+      ...academicAttention
+    };
+    saveCurrentFakeUser();
+  }
+  syncAcademicAttention();
+  updateBodyMenuState();
 }
 
 function closeAppDrawer() {
   isDrawerOpen = false;
   appDrawer.hidden = true;
   appDrawerBackdrop.hidden = !isAccountMenuOpen;
+  updateBodyMenuState();
 }
 
 function openAccountMenu() {
@@ -231,12 +247,85 @@ function openAccountMenu() {
   isAccountMenuOpen = true;
   accountMenu.hidden = false;
   appDrawerBackdrop.hidden = false;
+  updateBodyMenuState();
 }
 
 function closeAccountMenu() {
   isAccountMenuOpen = false;
   accountMenu.hidden = true;
   appDrawerBackdrop.hidden = !isDrawerOpen;
+  updateBodyMenuState();
+}
+
+function normalizeStorageKey(value) {
+  return String(value).trim().toLowerCase();
+}
+
+function readFakeProfiles() {
+  try {
+    const rawProfiles = window.localStorage.getItem(FAKE_PROFILES_KEY);
+    return rawProfiles ? JSON.parse(rawProfiles) : {};
+  } catch (error) {
+    return {};
+  }
+}
+
+function writeFakeProfiles(profiles) {
+  window.localStorage.setItem(FAKE_PROFILES_KEY, JSON.stringify(profiles));
+}
+
+function saveCurrentFakeUser() {
+  if (!authenticatedUser) {
+    return;
+  }
+
+  const profiles = readFakeProfiles();
+  const profileKey = normalizeStorageKey(authenticatedUser.id || authenticatedUser.user_metadata?.full_name || "");
+  profiles[profileKey] = authenticatedUser;
+  writeFakeProfiles(profiles);
+  window.localStorage.setItem(FAKE_SESSION_KEY, JSON.stringify({ profileKey }));
+}
+
+function buildFakeUser(fullName, existingUser = null) {
+  const normalizedName = fullName.trim();
+  const currentMetadata = existingUser?.user_metadata || {};
+
+  return {
+    id: normalizeStorageKey(normalizedName),
+    email: "",
+    user_metadata: {
+      full_name: normalizedName,
+      academic_track: currentMetadata.academic_track || "",
+      subjects: Array.isArray(currentMetadata.subjects) ? currentMetadata.subjects : [],
+      preferred_subject: currentMetadata.preferred_subject || "",
+      academic_attention: currentMetadata.academic_attention || { menu: false, edit: false }
+    }
+  };
+}
+
+function getStoredFakeSessionUser() {
+  try {
+    const rawSession = window.localStorage.getItem(FAKE_SESSION_KEY);
+
+    if (!rawSession) {
+      return null;
+    }
+
+    const session = JSON.parse(rawSession);
+    const profiles = readFakeProfiles();
+    return session?.profileKey ? profiles[session.profileKey] || null : null;
+  } catch (error) {
+    return null;
+  }
+}
+
+function clearFakeSession() {
+  window.localStorage.removeItem(FAKE_SESSION_KEY);
+}
+
+function syncAcademicAttention() {
+  menuAttentionDot.hidden = !academicAttention.menu;
+  editAcademicDot.hidden = !academicAttention.edit;
 }
 
 function createSubjectInputRow({ value = "", inputId, listName }) {
@@ -316,6 +405,11 @@ function syncSelectedSubjectIntoModules() {
 function renderAcademicProfile(user) {
   const profile = getAcademicProfileFromUser(user);
   const hasProfile = Boolean(profile.academicTrack && profile.subjects.length > 0);
+  academicAttention = {
+    menu: Boolean(user?.user_metadata?.academic_attention?.menu),
+    edit: Boolean(user?.user_metadata?.academic_attention?.edit)
+  };
+  syncAcademicAttention();
 
   academicTrackInput.value = profile.academicTrack;
   drawerAcademicTrackInput.value = profile.academicTrack;
@@ -359,20 +453,14 @@ function renderAcademicProfile(user) {
       sessionSelectedSubject.textContent = `Ramo activo para esta sesion: ${selectedStudySubject}.`;
       syncSelectedSubjectIntoModules();
 
-      if (!supabaseClient || !authenticatedUser) {
+      if (!authenticatedUser) {
+        authenticatedUser.user_metadata.preferred_subject = subject;
+        saveCurrentFakeUser();
         return;
       }
 
-      const { error, data } = await supabaseClient.auth.updateUser({
-        data: {
-          ...authenticatedUser.user_metadata,
-          preferred_subject: subject
-        }
-      });
-
-      if (!error && data?.user) {
-        authenticatedUser = data.user;
-      }
+      authenticatedUser.user_metadata.preferred_subject = subject;
+      saveCurrentFakeUser();
     });
 
     sessionSubjectButtons.appendChild(button);
@@ -383,26 +471,21 @@ function renderAcademicProfile(user) {
 }
 
 async function saveAcademicProfile({ academicTrack, subjects }) {
-  if (!supabaseClient || !authenticatedUser) {
+  if (!authenticatedUser) {
     return;
   }
-
-  const { data, error } = await supabaseClient.auth.updateUser({
-    data: {
-      ...authenticatedUser.user_metadata,
-      academic_track: academicTrack,
-      subjects,
-      preferred_subject: subjects.includes(selectedStudySubject) ? selectedStudySubject : subjects[0] || ""
+  authenticatedUser.user_metadata = {
+    ...authenticatedUser.user_metadata,
+    academic_track: academicTrack,
+    subjects,
+    preferred_subject: subjects.includes(selectedStudySubject) ? selectedStudySubject : subjects[0] || "",
+    academic_attention: {
+      menu: true,
+      edit: true
     }
-  });
-
-  if (error) {
-    throw error;
-  }
-
-  if (data?.user) {
-    applyAuthenticatedUser(data.user);
-  }
+  };
+  saveCurrentFakeUser();
+  applyAuthenticatedUser(authenticatedUser);
 }
 
 function getDisplayNameFromUser(user) {
@@ -428,35 +511,19 @@ function applyAuthenticatedUser(user) {
 
   const displayName = getDisplayNameFromUser(user);
   const firstName = displayName.split(/\s+/)[0] || displayName;
-  const email = user.email || "Cuenta activa";
 
-  homeBrandCopy.textContent = `Sesion iniciada con ${email}.`;
+  homeBrandCopy.textContent = "Sesion ficticia activa en este navegador.";
   homeTopbarBadge.textContent = `Hola, ${firstName}`;
-  homeHeroPill.textContent = "Cuenta de estudio activa";
+  homeHeroPill.textContent = "Sesion de prueba activa";
   homeHeroTitle.textContent = `${firstName}, elige como quieres estudiar hoy`;
   homeHeroCopy.textContent =
-    "Accede a tus herramientas de estudio con IA desde una portada clara y ordenada. Tu cuenta ya esta lista para crecer con historial, progreso y biblioteca personal.";
+    "Accede a tus herramientas de estudio con IA desde una portada clara y ordenada. Esta sesion local nos permite probar funciones nuevas mas rapido.";
   homePreviewLabel.textContent = "Tu sesion";
-  homePreviewTag.textContent = "Autenticado";
+  homePreviewTag.textContent = "Sesion local";
   homePreviewTitle.textContent = displayName;
-  homePreviewCopy.textContent = `Correo activo: ${email}. Entra a cada modulo por separado y manten una experiencia limpia para estudiar.`;
+  homePreviewCopy.textContent = "Tu informacion queda guardada en este navegador para seguir probando funciones sin iniciar sesion real.";
   appUserInitial.textContent = firstName.charAt(0).toUpperCase();
   renderAcademicProfile(user);
-}
-
-function setAuthMode(mode) {
-  authMode = mode === "signup" ? "signup" : "signin";
-  authSignInTabButton.classList.toggle("is-active", authMode === "signin");
-  authSignUpTabButton.classList.toggle("is-active", authMode === "signup");
-  authFullNameInput.required = authMode === "signup";
-  authFullNameLabel.hidden = authMode === "signin";
-  authFullNameInput.hidden = authMode === "signin";
-  authPasswordInput.autocomplete = authMode === "signup" ? "new-password" : "current-password";
-  authSubmitButton.textContent = authMode === "signup" ? "Crear cuenta" : "Entrar a mi espacio";
-  authStatusMessage.textContent =
-    authMode === "signup"
-      ? "Crea tu cuenta con correo y contrasena. Si tu proyecto tiene confirmacion por email, revisa tu bandeja antes de iniciar sesion."
-      : "Inicia sesion con tu cuenta para entrar siempre a tu espacio.";
 }
 
 function updateAuthMessage(message, isError = false) {
@@ -467,72 +534,9 @@ function updateAuthMessage(message, isError = false) {
 function handleSignedOutState(message = "La sesion fue cerrada correctamente.") {
   authenticatedUser = null;
   authForm.reset();
-  setAuthMode("signin");
   updateAuthMessage(message);
   showView("auth");
-  authEmailInput.focus();
-}
-
-async function loadSupabaseConfig() {
-  const response = await fetch("/api/config");
-  const payload = await response.json();
-
-  if (!response.ok) {
-    throw new Error(payload?.error || "No fue posible cargar la configuracion de autenticacion.");
-  }
-
-  if (!payload?.supabaseUrl || !payload?.supabaseAnonKey) {
-    throw new Error("Faltan SUPABASE_URL o SUPABASE_ANON_KEY en la configuracion.");
-  }
-
-  return payload;
-}
-
-async function initializeSupabaseAuth() {
-  if (!window.supabase?.createClient) {
-    updateAuthMessage("No fue posible cargar el cliente de autenticacion.", true);
-    return;
-  }
-
-  try {
-    const config = await loadSupabaseConfig();
-    supabaseClient = window.supabase.createClient(config.supabaseUrl, config.supabaseAnonKey);
-
-    const {
-      data: { session },
-      error
-    } = await supabaseClient.auth.getSession();
-
-    if (error) {
-      throw error;
-    }
-
-    if (session?.user) {
-      applyAuthenticatedUser(session.user);
-      showView("home");
-    } else {
-      authenticatedUser = null;
-      showView("auth");
-    }
-
-    supabaseClient.auth.onAuthStateChange((event, sessionData) => {
-      if (sessionData?.user) {
-        applyAuthenticatedUser(sessionData.user);
-      } else {
-        authenticatedUser = null;
-
-        if (event === "SIGNED_OUT") {
-          handleSignedOutState();
-        }
-      }
-    });
-  } catch (error) {
-    updateAuthMessage(
-      error instanceof Error ? error.message : "No fue posible inicializar el acceso con Supabase.",
-      true
-    );
-    showView("auth");
-  }
+  authFullNameInput.focus();
 }
 
 function getActiveView() {
@@ -1680,71 +1684,26 @@ pdfFileInput.addEventListener("change", async (event) => {
 authForm.addEventListener("submit", async (event) => {
   event.preventDefault();
 
-  if (!supabaseClient) {
-    updateAuthMessage("La autenticacion todavia no esta disponible. Revisa la configuracion de Supabase.", true);
-    return;
-  }
-
-  const email = authEmailInput.value.trim();
-  const password = authPasswordInput.value.trim();
   const fullName = authFullNameInput.value.trim();
 
-  if (!email || !password || (authMode === "signup" && !fullName)) {
-    updateAuthMessage("Completa los campos obligatorios para continuar.", true);
+  if (!fullName) {
+    updateAuthMessage("Escribe tu nombre para entrar a la sesion ficticia.", true);
     return;
   }
 
   authSubmitButton.disabled = true;
 
   try {
-    if (authMode === "signup") {
-      const { data, error } = await supabaseClient.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: fullName
-          }
-        }
-      });
-
-      if (error) {
-        throw error;
-      }
-
-      if (data?.session?.user) {
-        applyAuthenticatedUser(data.session.user);
-        updateAuthMessage("Tu cuenta fue creada y la sesion ya esta activa.");
-        showView("home");
-      } else {
-        updateAuthMessage(
-          "Tu cuenta fue creada. Si activaste confirmacion por correo en Supabase, revisa tu email antes de iniciar sesion."
-        );
-        setAuthMode("signin");
-      }
-
-      return;
-    }
-
-    const {
-      data: { user },
-      error
-    } = await supabaseClient.auth.signInWithPassword({
-      email,
-      password
-    });
-
-    if (error) {
-      throw error;
-    }
-
-    if (user) {
-      applyAuthenticatedUser(user);
-      updateAuthMessage("Sesion iniciada correctamente.");
-      showView("home");
-    }
+    const profiles = readFakeProfiles();
+    const profileKey = normalizeStorageKey(fullName);
+    const fakeUser = profiles[profileKey] || buildFakeUser(fullName);
+    authenticatedUser = fakeUser;
+    saveCurrentFakeUser();
+    applyAuthenticatedUser(fakeUser);
+    updateAuthMessage("Sesion ficticia iniciada correctamente.");
+    showView("home");
   } catch (error) {
-    updateAuthMessage(error instanceof Error ? error.message : "No fue posible completar la autenticacion.", true);
+    updateAuthMessage(error instanceof Error ? error.message : "No fue posible iniciar la sesion ficticia.", true);
   } finally {
     authSubmitButton.disabled = false;
   }
@@ -1752,7 +1711,7 @@ authForm.addEventListener("submit", async (event) => {
 
 openViewButtons.forEach((button) => {
   button.addEventListener("click", () => {
-    if (!supabaseClient || !authenticatedUser) {
+    if (!authenticatedUser) {
       showView("auth");
       return;
     }
@@ -1769,14 +1728,6 @@ goHomeButtons.forEach((button) => {
   button.addEventListener("click", () => {
     showView("home");
   });
-});
-
-authSignInTabButton.addEventListener("click", () => {
-  setAuthMode("signin");
-});
-
-authSignUpTabButton.addEventListener("click", () => {
-  setAuthMode("signup");
 });
 
 addSessionSubjectButton.addEventListener("click", () => {
@@ -1814,6 +1765,14 @@ sessionProfileForm.addEventListener("submit", async (event) => {
 });
 
 editAcademicProfileButton.addEventListener("click", () => {
+  academicAttention.edit = false;
+  if (authenticatedUser?.user_metadata) {
+    authenticatedUser.user_metadata.academic_attention = {
+      ...academicAttention
+    };
+    saveCurrentFakeUser();
+  }
+  syncAcademicAttention();
   drawerAcademicEditor.hidden = !drawerAcademicEditor.hidden;
 });
 
@@ -1861,22 +1820,13 @@ appDrawerBackdrop.addEventListener("click", () => {
 });
 
 signOutButtons.forEach((button) => {
-  button.addEventListener("click", async () => {
-    if (!supabaseClient) {
-      showView("auth");
-      return;
-    }
-
+  button.addEventListener("click", () => {
     button.disabled = true;
 
     try {
-      const { error } = await supabaseClient.auth.signOut();
-
-      if (error) {
-        throw error;
-      }
-
+      clearFakeSession();
       closeAppDrawer();
+      closeAccountMenu();
       handleSignedOutState();
     } catch (error) {
       updateAuthMessage(error instanceof Error ? error.message : "No fue posible cerrar la sesion.", true);
@@ -1994,8 +1944,15 @@ document.addEventListener("click", (event) => {
 window.addEventListener("scroll", updateFloatingHomeButtons, { passive: true });
 window.addEventListener("resize", updateFloatingHomeButtons);
 syncPomodoroUi();
-setAuthMode("signin");
-initializeSupabaseAuth();
+const initialFakeSessionUser = getStoredFakeSessionUser();
+if (initialFakeSessionUser) {
+  authenticatedUser = initialFakeSessionUser;
+  applyAuthenticatedUser(initialFakeSessionUser);
+  showView("home");
+} else {
+  showView("auth");
+  authFullNameInput.focus();
+}
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();

@@ -38,6 +38,10 @@ body {
     linear-gradient(180deg, #ffffff 0%, var(--bg) 52%, #fdfefe 100%);
 }
 
+body.menu-open {
+  overflow: hidden;
+}
+
 body::before {
   content: "";
   position: fixed;
@@ -99,6 +103,7 @@ body::before {
 }
 
 .app-topbar-icon {
+  position: relative;
   flex-direction: column;
   gap: 4px;
 }
@@ -122,11 +127,30 @@ body::before {
   background: linear-gradient(135deg, var(--primary), var(--primary-dark));
 }
 
+.attention-dot {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: #ff5d5d;
+  box-shadow: 0 0 0 3px rgba(255, 93, 93, 0.14);
+}
+
+.attention-dot-inline {
+  position: static;
+  margin-left: 10px;
+  flex-shrink: 0;
+}
+
 .app-drawer {
   position: fixed;
   top: 18px;
   left: max(16px, calc((100vw - 1240px) / 2 + 16px));
   width: min(360px, calc(100vw - 32px));
+  max-height: calc(100vh - 36px);
+  overflow-y: auto;
   z-index: 170;
   padding: 22px;
   border-radius: 28px;
@@ -198,6 +222,8 @@ body::before {
   top: 86px;
   right: max(16px, calc((100vw - 1240px) / 2 + 16px));
   width: min(300px, calc(100vw - 32px));
+  max-height: calc(100vh - 104px);
+  overflow-y: auto;
   z-index: 170;
   padding: 20px;
   border-radius: 24px;
@@ -1478,6 +1504,7 @@ button[type="submit"] {
     top: 10px;
     left: 10px;
     width: calc(100vw - 20px);
+    max-height: calc(100vh - 20px);
     border-radius: 24px;
   }
 
@@ -1485,6 +1512,7 @@ button[type="submit"] {
     top: 74px;
     right: 10px;
     width: calc(100vw - 20px);
+    max-height: calc(100vh - 84px);
     border-radius: 22px;
   }
 
