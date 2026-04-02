@@ -11,6 +11,7 @@ const authSubmitButton = document.querySelector("#auth-submit-button");
 const signOutButtons = document.querySelectorAll("[data-sign-out]");
 const appTopbar = document.querySelector("#app-topbar");
 const appDrawer = document.querySelector("#app-drawer");
+const accountMenu = document.querySelector("#account-menu");
 const appDrawerBackdrop = document.querySelector("#app-drawer-backdrop");
 const menuToggleButton = document.querySelector("#menu-toggle-button");
 const drawerCloseButton = document.querySelector("#drawer-close-button");
@@ -161,6 +162,7 @@ let supabaseClient = null;
 let authMode = "signin";
 let authenticatedUser = null;
 let isDrawerOpen = false;
+let isAccountMenuOpen = false;
 const pomodoroState = {
   studyMinutes: 25,
   breakMinutes: 5,
@@ -187,6 +189,7 @@ function showView(viewName) {
   appTopbar.hidden = isAuthView;
   if (isAuthView) {
     closeAppDrawer();
+    closeAccountMenu();
   }
 
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -195,6 +198,7 @@ function showView(viewName) {
 }
 
 function openAppDrawer() {
+  closeAccountMenu();
   isDrawerOpen = true;
   appDrawer.hidden = false;
   appDrawerBackdrop.hidden = false;
@@ -203,7 +207,20 @@ function openAppDrawer() {
 function closeAppDrawer() {
   isDrawerOpen = false;
   appDrawer.hidden = true;
-  appDrawerBackdrop.hidden = true;
+  appDrawerBackdrop.hidden = !isAccountMenuOpen;
+}
+
+function openAccountMenu() {
+  closeAppDrawer();
+  isAccountMenuOpen = true;
+  accountMenu.hidden = false;
+  appDrawerBackdrop.hidden = false;
+}
+
+function closeAccountMenu() {
+  isAccountMenuOpen = false;
+  accountMenu.hidden = true;
+  appDrawerBackdrop.hidden = !isDrawerOpen;
 }
 
 function getDisplayNameFromUser(user) {
@@ -1592,10 +1609,10 @@ drawerCloseButton.addEventListener("click", () => {
 });
 
 userMenuButton.addEventListener("click", () => {
-  if (isDrawerOpen) {
-    closeAppDrawer();
+  if (isAccountMenuOpen) {
+    closeAccountMenu();
   } else {
-    openAppDrawer();
+    openAccountMenu();
   }
 });
 
@@ -1711,7 +1728,12 @@ document.addEventListener("click", (event) => {
     return;
   }
 
-  if (target.closest("#app-drawer") || target.closest("#menu-toggle-button") || target.closest("#user-menu-button")) {
+  if (
+    target.closest("#app-drawer") ||
+    target.closest("#account-menu") ||
+    target.closest("#menu-toggle-button") ||
+    target.closest("#user-menu-button")
+  ) {
     return;
   }
 
@@ -1722,6 +1744,10 @@ document.addEventListener("click", (event) => {
 
   if (isDrawerOpen) {
     closeAppDrawer();
+  }
+
+  if (isAccountMenuOpen) {
+    closeAccountMenu();
   }
 });
 

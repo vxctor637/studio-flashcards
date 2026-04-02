@@ -125,8 +125,7 @@ body::before {
 .app-drawer {
   position: fixed;
   top: 18px;
-  left: 50%;
-  transform: translateX(calc(-620px - 18px));
+  left: max(16px, calc((100vw - 1240px) / 2 + 16px));
   width: min(360px, calc(100vw - 32px));
   z-index: 170;
   padding: 22px;
@@ -179,6 +178,38 @@ body::before {
 .drawer-link,
 .drawer-sign-out-button {
   width: 100%;
+}
+
+.account-menu {
+  position: fixed;
+  top: 86px;
+  right: max(16px, calc((100vw - 1240px) / 2 + 16px));
+  width: min(300px, calc(100vw - 32px));
+  z-index: 170;
+  padding: 20px;
+  border-radius: 24px;
+  border: 1px solid var(--border);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(239, 246, 255, 0.96)),
+    var(--surface-strong);
+  box-shadow: 0 24px 60px rgba(40, 72, 126, 0.18);
+}
+
+.account-menu-header h2,
+.account-menu-header p,
+.account-menu-copy {
+  margin: 0;
+}
+
+.account-menu-content {
+  margin-top: 14px;
+  display: grid;
+  gap: 14px;
+}
+
+.account-menu-copy {
+  color: var(--muted);
+  line-height: 1.65;
 }
 
 .app-drawer-backdrop {
@@ -1374,9 +1405,15 @@ button[type="submit"] {
   .app-drawer {
     top: 10px;
     left: 10px;
-    transform: none;
     width: calc(100vw - 20px);
     border-radius: 24px;
+  }
+
+  .account-menu {
+    top: 74px;
+    right: 10px;
+    width: calc(100vw - 20px);
+    border-radius: 22px;
   }
 
   .auth-copy-card,
