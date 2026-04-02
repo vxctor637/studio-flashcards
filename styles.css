@@ -274,6 +274,24 @@ body::before {
   grid-column: 1 / -1;
 }
 
+.history-detail-panel .results-header {
+  width: 100%;
+  align-items: flex-start;
+}
+
+.history-detail-panel .results-header > div {
+  flex: 1;
+}
+
+.history-detail-panel .results-header > div .eyebrow {
+  margin-bottom: 8px;
+}
+
+.history-detail-panel .results-header > button {
+  margin-left: auto;
+  align-self: flex-start;
+}
+
 .history-subject-button {
   width: 100%;
   display: inline-flex;

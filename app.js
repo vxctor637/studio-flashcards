@@ -38,6 +38,7 @@ const historySessionsList = document.querySelector("#history-sessions-list");
 const historyDetailCloseButton = document.querySelector("#history-detail-close");
 const historyDetailEmpty = document.querySelector("#history-detail-empty");
 const historyDetailContent = document.querySelector("#history-detail-content");
+const historyDetailPanel = document.querySelector(".history-detail-panel");
 const homeBrandCopy = document.querySelector("#home-brand-copy");
 const homeTopbarBadge = document.querySelector("#home-topbar-badge");
 const homeHeroPill = document.querySelector("#home-hero-pill");
@@ -729,6 +730,13 @@ function renderHistoryDetail(entry) {
   }
 
   historyDetailContent.appendChild(wrapper);
+
+  if (historyDetailPanel) {
+    historyDetailPanel.scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
+  }
 }
 
 function createSubjectInputRow({ value = "", inputId, listName }) {
