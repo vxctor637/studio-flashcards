@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Campus IA | Estudia con tarjetas inteligentes</title>
-    <link rel="stylesheet" href="./styles.css?v=20260401d" />
+    <link rel="stylesheet" href="./styles.css?v=20260402a" />
   </head>
   <body>
     <main class="app-shell">
@@ -44,7 +44,37 @@
             <button type="button" class="secondary drawer-link">Historial de estudio</button>
             <button type="button" class="secondary drawer-link">Biblioteca personal</button>
             <button type="button" class="secondary drawer-link">Configuracion</button>
+            <button type="button" class="secondary drawer-link" id="edit-academic-profile-button">
+              Editar ramos y curso
+            </button>
           </div>
+
+          <section id="drawer-academic-editor" class="drawer-editor" hidden>
+            <div class="section-heading compact-heading">
+              <p class="eyebrow">Perfil academico</p>
+              <h2>Edita tu informacion</h2>
+            </div>
+
+            <form id="drawer-academic-form" class="drawer-academic-form">
+              <label for="drawer-academic-track">Carrera o curso</label>
+              <input
+                id="drawer-academic-track"
+                name="drawerAcademicTrack"
+                type="text"
+                placeholder="Ej: Enfermeria, 3 medio, 8 basico"
+                required
+              />
+
+              <div class="concepts-header">
+                <label for="drawer-subject-1">Ramos</label>
+                <button type="button" id="drawer-add-subject-button" class="icon-button">+</button>
+              </div>
+
+              <div id="drawer-subjects-list" class="concepts-list"></div>
+
+              <button type="submit" class="secondary">Guardar cambios</button>
+            </form>
+          </section>
         </div>
       </aside>
 
@@ -178,6 +208,45 @@
                   <strong>Estudio guiado</strong>
                 </div>
               </div>
+
+              <section class="session-academic-panel">
+                <div class="section-heading compact-heading">
+                  <p class="eyebrow">Tu sesion</p>
+                  <h2>Perfil academico</h2>
+                </div>
+
+                <form id="session-profile-form" class="session-profile-form">
+                  <label for="academic-track">Carrera o curso</label>
+                  <input
+                    id="academic-track"
+                    name="academicTrack"
+                    type="text"
+                    placeholder="Ej: Psicologia, 4 medio, 7 basico"
+                    required
+                  />
+
+                  <div class="concepts-header">
+                    <label for="session-subject-1">Ramos</label>
+                    <button type="button" id="add-session-subject-button" class="icon-button">+</button>
+                  </div>
+
+                  <div id="session-subjects-list" class="concepts-list"></div>
+
+                  <button type="submit">Guardar perfil academico</button>
+                </form>
+
+                <div id="session-academic-summary" class="session-academic-summary" hidden>
+                  <span class="preview-tag">Perfil guardado</span>
+                  <strong id="session-track-display"></strong>
+                  <p id="session-summary-copy">
+                    Elige el ramo que quieres estudiar ahora. Podras editar esta informacion desde el menu.
+                  </p>
+                  <div id="session-subject-buttons" class="session-subject-buttons"></div>
+                  <p id="session-selected-subject" class="session-selected-subject">
+                    Todavia no has seleccionado un ramo para esta sesion.
+                  </p>
+                </div>
+              </section>
 
               <section class="hero-pomodoro">
                 <div class="section-heading compact-heading">
@@ -793,6 +862,6 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="./app.js?v=20260401d"></script>
+    <script src="./app.js?v=20260402a"></script>
   </body>
 </html>

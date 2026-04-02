@@ -180,6 +180,19 @@ body::before {
   width: 100%;
 }
 
+.drawer-editor {
+  padding: 18px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-soft);
+}
+
+.drawer-academic-form {
+  display: grid;
+  gap: 12px;
+}
+
 .account-menu {
   position: fixed;
   top: 86px;
@@ -575,6 +588,65 @@ body::before {
 
 .preview-metrics strong {
   font-size: 1rem;
+}
+
+.session-academic-panel {
+  margin-top: 14px;
+  padding: 20px;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-soft);
+}
+
+.session-profile-form {
+  display: grid;
+  gap: 12px;
+}
+
+.session-academic-summary strong,
+.session-academic-summary p {
+  display: block;
+  margin: 0;
+}
+
+.session-academic-summary strong {
+  margin-top: 14px;
+  font-size: 1.1rem;
+}
+
+.session-summary-copy {
+  margin-top: 8px;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+.session-subject-buttons {
+  margin-top: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.session-subject-button {
+  min-height: 42px;
+  padding: 0 16px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(102, 117, 143, 0.16);
+  box-shadow: var(--shadow-soft);
+}
+
+.session-subject-button.is-active {
+  color: #fff;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  box-shadow: 0 16px 30px rgba(47, 109, 246, 0.22);
+}
+
+.session-selected-subject {
+  margin: 14px 0 0;
+  color: var(--muted);
+  line-height: 1.65;
 }
 
 .tools-panel,

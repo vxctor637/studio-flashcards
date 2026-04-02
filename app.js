@@ -17,6 +17,21 @@ const menuToggleButton = document.querySelector("#menu-toggle-button");
 const drawerCloseButton = document.querySelector("#drawer-close-button");
 const userMenuButton = document.querySelector("#user-menu-button");
 const appUserInitial = document.querySelector("#app-user-initial");
+const sessionProfileForm = document.querySelector("#session-profile-form");
+const academicTrackInput = document.querySelector("#academic-track");
+const sessionSubjectsList = document.querySelector("#session-subjects-list");
+const addSessionSubjectButton = document.querySelector("#add-session-subject-button");
+const sessionAcademicSummary = document.querySelector("#session-academic-summary");
+const sessionTrackDisplay = document.querySelector("#session-track-display");
+const sessionSummaryCopy = document.querySelector("#session-summary-copy");
+const sessionSubjectButtons = document.querySelector("#session-subject-buttons");
+const sessionSelectedSubject = document.querySelector("#session-selected-subject");
+const editAcademicProfileButton = document.querySelector("#edit-academic-profile-button");
+const drawerAcademicEditor = document.querySelector("#drawer-academic-editor");
+const drawerAcademicForm = document.querySelector("#drawer-academic-form");
+const drawerAcademicTrackInput = document.querySelector("#drawer-academic-track");
+const drawerSubjectsList = document.querySelector("#drawer-subjects-list");
+const drawerAddSubjectButton = document.querySelector("#drawer-add-subject-button");
 const homeBrandCopy = document.querySelector("#home-brand-copy");
 const homeTopbarBadge = document.querySelector("#home-topbar-badge");
 const homeHeroPill = document.querySelector("#home-hero-pill");
@@ -163,6 +178,7 @@ let authMode = "signin";
 let authenticatedUser = null;
 let isDrawerOpen = false;
 let isAccountMenuOpen = false;
+let selectedStudySubject = "";
 const pomodoroState = {
   studyMinutes: 25,
   breakMinutes: 5,
@@ -223,6 +239,172 @@ function closeAccountMenu() {
   appDrawerBackdrop.hidden = !isDrawerOpen;
 }
 
+function createSubjectInputRow({ value = "", inputId, listName }) {
+  const row = document.createElement("div");
+  row.className = "concept-row";
+
+  const input = document.createElement("input");
+  input.type = "text";
+  input.value = value;
+  input.placeholder = "Ej: Biologia, Historia, Fisiologia";
+  input.name = listName;
+  if (inputId) {
+    input.id = inputId;
+  }
+
+  row.appendChild(input);
+  return row;
+}
+
+function getAcademicSubjects(listNode, inputName) {
+  return Array.from(listNode.querySelectorAll(`input[name="${inputName}"]`))
+    .map((input) => input.value.trim())
+    .filter(Boolean);
+}
+
+function ensureSubjectInputs(listNode, inputName, subjects = []) {
+  listNode.innerHTML = "";
+  const safeSubjects = subjects.length > 0 ? subjects : [""];
+
+  safeSubjects.forEach((subject, index) => {
+    listNode.appendChild(
+      createSubjectInputRow({
+        value: subject,
+        inputId: `${inputName}-${index + 1}`,
+        listName: inputName
+      })
+    );
+  });
+}
+
+function getAcademicProfileFromUser(user) {
+  const academicTrack = typeof user?.user_metadata?.academic_track === "string" ? user.user_metadata.academic_track.trim() : "";
+  const subjects = Array.isArray(user?.user_metadata?.subjects)
+    ? user.user_metadata.subjects
+        .filter((subject) => typeof subject === "string")
+        .map((subject) => subject.trim())
+        .filter(Boolean)
+    : [];
+  const preferredSubject =
+    typeof user?.user_metadata?.preferred_subject === "string" ? user.user_metadata.preferred_subject.trim() : "";
+
+  return {
+    academicTrack,
+    subjects,
+    preferredSubject
+  };
+}
+
+function syncSelectedSubjectIntoModules() {
+  if (!selectedStudySubject) {
+    return;
+  }
+
+  if (!subjectInput.value.trim()) {
+    subjectInput.value = selectedStudySubject;
+  }
+
+  if (!summarySubjectInput.value.trim()) {
+    summarySubjectInput.value = selectedStudySubject;
+  }
+
+  if (!quizSubjectInput.value.trim()) {
+    quizSubjectInput.value = selectedStudySubject;
+  }
+}
+
+function renderAcademicProfile(user) {
+  const profile = getAcademicProfileFromUser(user);
+  const hasProfile = Boolean(profile.academicTrack && profile.subjects.length > 0);
+
+  academicTrackInput.value = profile.academicTrack;
+  drawerAcademicTrackInput.value = profile.academicTrack;
+  ensureSubjectInputs(sessionSubjectsList, "sessionSubject", profile.subjects);
+  ensureSubjectInputs(drawerSubjectsList, "drawerSubject", profile.subjects);
+
+  sessionProfileForm.hidden = hasProfile;
+  sessionAcademicSummary.hidden = !hasProfile;
+
+  if (!hasProfile) {
+    selectedStudySubject = "";
+    sessionSubjectButtons.innerHTML = "";
+    sessionSelectedSubject.textContent = "Todavia no has seleccionado un ramo para esta sesion.";
+    sessionSummaryCopy.textContent =
+      "Completa tu carrera o curso y agrega tus ramos. Luego quedaran listos para elegir que estudiar al entrar.";
+    return;
+  }
+
+  sessionTrackDisplay.textContent = profile.academicTrack;
+  sessionSummaryCopy.textContent =
+    "Elige el ramo que quieres estudiar ahora. Podras editar esta informacion desde el menu.";
+  sessionSubjectButtons.innerHTML = "";
+
+  selectedStudySubject = profile.subjects.includes(profile.preferredSubject)
+    ? profile.preferredSubject
+    : profile.subjects.includes(selectedStudySubject)
+      ? selectedStudySubject
+      : profile.subjects[0];
+
+  profile.subjects.forEach((subject) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = `session-subject-button ${subject === selectedStudySubject ? "is-active" : ""}`;
+    button.textContent = subject;
+
+    button.addEventListener("click", async () => {
+      selectedStudySubject = subject;
+      Array.from(sessionSubjectButtons.querySelectorAll(".session-subject-button")).forEach((buttonNode) => {
+        buttonNode.classList.toggle("is-active", buttonNode.textContent === subject);
+      });
+      sessionSelectedSubject.textContent = `Ramo activo para esta sesion: ${selectedStudySubject}.`;
+      syncSelectedSubjectIntoModules();
+
+      if (!supabaseClient || !authenticatedUser) {
+        return;
+      }
+
+      const { error, data } = await supabaseClient.auth.updateUser({
+        data: {
+          ...authenticatedUser.user_metadata,
+          preferred_subject: subject
+        }
+      });
+
+      if (!error && data?.user) {
+        authenticatedUser = data.user;
+      }
+    });
+
+    sessionSubjectButtons.appendChild(button);
+  });
+
+  sessionSelectedSubject.textContent = `Ramo activo para esta sesion: ${selectedStudySubject}.`;
+  syncSelectedSubjectIntoModules();
+}
+
+async function saveAcademicProfile({ academicTrack, subjects }) {
+  if (!supabaseClient || !authenticatedUser) {
+    return;
+  }
+
+  const { data, error } = await supabaseClient.auth.updateUser({
+    data: {
+      ...authenticatedUser.user_metadata,
+      academic_track: academicTrack,
+      subjects,
+      preferred_subject: subjects.includes(selectedStudySubject) ? selectedStudySubject : subjects[0] || ""
+    }
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  if (data?.user) {
+    applyAuthenticatedUser(data.user);
+  }
+}
+
 function getDisplayNameFromUser(user) {
   const fullName = user?.user_metadata?.full_name;
 
@@ -259,6 +441,7 @@ function applyAuthenticatedUser(user) {
   homePreviewTitle.textContent = displayName;
   homePreviewCopy.textContent = `Correo activo: ${email}. Entra a cada modulo por separado y manten una experiencia limpia para estudiar.`;
   appUserInitial.textContent = firstName.charAt(0).toUpperCase();
+  renderAcademicProfile(user);
 }
 
 function setAuthMode(mode) {
@@ -1594,6 +1777,63 @@ authSignInTabButton.addEventListener("click", () => {
 
 authSignUpTabButton.addEventListener("click", () => {
   setAuthMode("signup");
+});
+
+addSessionSubjectButton.addEventListener("click", () => {
+  sessionSubjectsList.appendChild(
+    createSubjectInputRow({
+      listName: "sessionSubject"
+    })
+  );
+});
+
+drawerAddSubjectButton.addEventListener("click", () => {
+  drawerSubjectsList.appendChild(
+    createSubjectInputRow({
+      listName: "drawerSubject"
+    })
+  );
+});
+
+sessionProfileForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  const academicTrack = academicTrackInput.value.trim();
+  const subjects = getAcademicSubjects(sessionSubjectsList, "sessionSubject");
+
+  if (!academicTrack || subjects.length === 0) {
+    return;
+  }
+
+  try {
+    await saveAcademicProfile({ academicTrack, subjects });
+  } catch (error) {
+    homePreviewCopy.textContent =
+      error instanceof Error ? error.message : "No fue posible guardar tu perfil academico.";
+  }
+});
+
+editAcademicProfileButton.addEventListener("click", () => {
+  drawerAcademicEditor.hidden = !drawerAcademicEditor.hidden;
+});
+
+drawerAcademicForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  const academicTrack = drawerAcademicTrackInput.value.trim();
+  const subjects = getAcademicSubjects(drawerSubjectsList, "drawerSubject");
+
+  if (!academicTrack || subjects.length === 0) {
+    return;
+  }
+
+  try {
+    await saveAcademicProfile({ academicTrack, subjects });
+    drawerAcademicEditor.hidden = true;
+  } catch (error) {
+    homePreviewCopy.textContent =
+      error instanceof Error ? error.message : "No fue posible actualizar tu perfil academico.";
+  }
 });
 
 menuToggleButton.addEventListener("click", () => {
