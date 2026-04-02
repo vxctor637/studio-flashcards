@@ -601,13 +601,22 @@ function renderStudyHistory(user) {
       entryNode.type = "button";
       entryNode.className = "history-module-entry";
 
+      const entryHeader = document.createElement("div");
+      entryHeader.className = "history-module-entry-header";
+
       const heading = document.createElement("h4");
       heading.textContent = entry.moduleName;
+
+      const openLabel = document.createElement("span");
+      openLabel.className = "history-module-entry-action";
+      openLabel.textContent = "Abrir contenido";
+
+      entryHeader.append(heading, openLabel);
 
       const topicNode = document.createElement("p");
       topicNode.textContent = entry.topic ? `Tema: ${entry.topic}` : `Ramo: ${entry.subject}`;
 
-      entryNode.append(heading, topicNode);
+      entryNode.append(entryHeader, topicNode);
 
       if (Array.isArray(entry.summaryLines) && entry.summaryLines.length > 0) {
         const list = document.createElement("ul");
@@ -954,16 +963,17 @@ function getActiveView() {
 function updateFloatingHomeButtons() {
   moduleFloatStacks.forEach((stack) => {
     const currentView = stack.closest(".view");
+    const moduleHeader = stack.closest(".module-header");
 
-    if (!currentView || !currentView.classList.contains("is-active")) {
+    if (!currentView || !moduleHeader || !currentView.classList.contains("is-active")) {
       stack.style.transform = "";
       return;
     }
 
     const scrollTop = window.scrollY || window.pageYOffset;
-    const viewTop = currentView.offsetTop;
-    const maxOffset = Math.max(currentView.offsetHeight - stack.offsetHeight - 44, 0);
-    const nextOffset = Math.min(Math.max(scrollTop - viewTop + 18, 0), maxOffset);
+    const headerTop = moduleHeader.offsetTop;
+    const availableHeight = Math.max(currentView.scrollHeight - moduleHeader.offsetHeight - 44, 0);
+    const nextOffset = Math.min(Math.max(scrollTop - headerTop + 18, 0), availableHeight);
 
     stack.style.transform = `translateY(${nextOffset}px)`;
   });
