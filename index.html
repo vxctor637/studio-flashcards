@@ -4,10 +4,54 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Campus IA | Estudia con tarjetas inteligentes</title>
-    <link rel="stylesheet" href="./styles.css?v=20260401b" />
+    <link rel="stylesheet" href="./styles.css?v=20260401c" />
   </head>
   <body>
     <main class="app-shell">
+      <header id="app-topbar" class="app-topbar" hidden>
+        <button type="button" class="app-topbar-icon" id="menu-toggle-button" aria-label="Abrir menu">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+
+        <div class="app-topbar-brand">
+          <p class="eyebrow">Campus IA</p>
+          <strong>Tu espacio de estudio</strong>
+        </div>
+
+        <button type="button" class="app-user-chip" id="user-menu-button" aria-label="Perfil de usuario">
+          <span id="app-user-initial" class="app-user-avatar">E</span>
+        </button>
+      </header>
+
+      <aside id="app-drawer" class="app-drawer" hidden>
+        <div class="app-drawer-header">
+          <div>
+            <p class="eyebrow">Menu</p>
+            <h2>Opciones</h2>
+          </div>
+          <button type="button" class="secondary drawer-close-button" id="drawer-close-button">Cerrar</button>
+        </div>
+
+        <div class="app-drawer-content">
+          <article class="drawer-card">
+            <strong>Tu panel estara aqui</strong>
+            <p>Despues podremos agregar historial, perfil, biblioteca, progreso y configuraciones.</p>
+          </article>
+
+          <div class="drawer-links">
+            <button type="button" class="secondary drawer-link">Historial de estudio</button>
+            <button type="button" class="secondary drawer-link">Biblioteca personal</button>
+            <button type="button" class="secondary drawer-link">Configuracion</button>
+          </div>
+
+          <button type="button" class="secondary drawer-sign-out-button" data-sign-out>Cerrar sesion</button>
+        </div>
+      </aside>
+
+      <div id="app-drawer-backdrop" class="app-drawer-backdrop" hidden></div>
+
       <section class="view view-auth is-active" id="auth-view" data-view="auth">
         <section class="auth-shell">
           <section class="auth-copy-card">
@@ -93,9 +137,6 @@
             </div>
             <div class="topbar-actions">
               <div id="home-topbar-badge" class="topbar-badge">Beta para estudiantes</div>
-              <button type="button" class="secondary topbar-profile-button" id="sign-out-button">
-                Cerrar sesion
-              </button>
             </div>
           </div>
 
@@ -742,6 +783,6 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="./app.js?v=20260401b"></script>
+    <script src="./app.js?v=20260401c"></script>
   </body>
 </html>

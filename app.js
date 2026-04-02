@@ -8,7 +8,14 @@ const authStatusMessage = document.querySelector("#auth-status-message");
 const authSignInTabButton = document.querySelector("#auth-signin-tab");
 const authSignUpTabButton = document.querySelector("#auth-signup-tab");
 const authSubmitButton = document.querySelector("#auth-submit-button");
-const signOutButton = document.querySelector("#sign-out-button");
+const signOutButtons = document.querySelectorAll("[data-sign-out]");
+const appTopbar = document.querySelector("#app-topbar");
+const appDrawer = document.querySelector("#app-drawer");
+const appDrawerBackdrop = document.querySelector("#app-drawer-backdrop");
+const menuToggleButton = document.querySelector("#menu-toggle-button");
+const drawerCloseButton = document.querySelector("#drawer-close-button");
+const userMenuButton = document.querySelector("#user-menu-button");
+const appUserInitial = document.querySelector("#app-user-initial");
 const homeBrandCopy = document.querySelector("#home-brand-copy");
 const homeTopbarBadge = document.querySelector("#home-topbar-badge");
 const homeHeroPill = document.querySelector("#home-hero-pill");
@@ -153,6 +160,7 @@ let pomodoroAudioContext = null;
 let supabaseClient = null;
 let authMode = "signin";
 let authenticatedUser = null;
+let isDrawerOpen = false;
 const pomodoroState = {
   studyMinutes: 25,
   breakMinutes: 5,
@@ -175,9 +183,27 @@ function showView(viewName) {
     view.classList.toggle("is-active", isActive);
   });
 
+  const isAuthView = viewName === "auth";
+  appTopbar.hidden = isAuthView;
+  if (isAuthView) {
+    closeAppDrawer();
+  }
+
   window.scrollTo({ top: 0, behavior: "smooth" });
   updateFloatingHomeButtons();
   syncPomodoroUi();
+}
+
+function openAppDrawer() {
+  isDrawerOpen = true;
+  appDrawer.hidden = false;
+  appDrawerBackdrop.hidden = false;
+}
+
+function closeAppDrawer() {
+  isDrawerOpen = false;
+  appDrawer.hidden = true;
+  appDrawerBackdrop.hidden = true;
 }
 
 function getDisplayNameFromUser(user) {
@@ -215,6 +241,7 @@ function applyAuthenticatedUser(user) {
   homePreviewTag.textContent = "Autenticado";
   homePreviewTitle.textContent = displayName;
   homePreviewCopy.textContent = `Correo activo: ${email}. Entra a cada modulo por separado y manten una experiencia limpia para estudiar.`;
+  appUserInitial.textContent = firstName.charAt(0).toUpperCase();
 }
 
 function setAuthMode(mode) {
@@ -235,6 +262,15 @@ function setAuthMode(mode) {
 function updateAuthMessage(message, isError = false) {
   authStatusMessage.textContent = message;
   authStatusMessage.style.color = isError ? "#8f2d1d" : "";
+}
+
+function handleSignedOutState(message = "La sesion fue cerrada correctamente.") {
+  authenticatedUser = null;
+  authForm.reset();
+  setAuthMode("signin");
+  updateAuthMessage(message);
+  showView("auth");
+  authEmailInput.focus();
 }
 
 async function loadSupabaseConfig() {
@@ -279,11 +315,15 @@ async function initializeSupabaseAuth() {
       showView("auth");
     }
 
-    supabaseClient.auth.onAuthStateChange((_event, sessionData) => {
+    supabaseClient.auth.onAuthStateChange((event, sessionData) => {
       if (sessionData?.user) {
         applyAuthenticatedUser(sessionData.user);
       } else {
         authenticatedUser = null;
+
+        if (event === "SIGNED_OUT") {
+          handleSignedOutState();
+        }
       }
     });
   } catch (error) {
@@ -1539,19 +1579,54 @@ authSignUpTabButton.addEventListener("click", () => {
   setAuthMode("signup");
 });
 
-signOutButton.addEventListener("click", async () => {
-  if (!supabaseClient) {
-    showView("auth");
-    return;
+menuToggleButton.addEventListener("click", () => {
+  if (isDrawerOpen) {
+    closeAppDrawer();
+  } else {
+    openAppDrawer();
   }
+});
 
-  await supabaseClient.auth.signOut();
-  authenticatedUser = null;
-  authForm.reset();
-  setAuthMode("signin");
-  updateAuthMessage("La sesion fue cerrada correctamente.");
-  showView("auth");
-  authEmailInput.focus();
+drawerCloseButton.addEventListener("click", () => {
+  closeAppDrawer();
+});
+
+userMenuButton.addEventListener("click", () => {
+  if (isDrawerOpen) {
+    closeAppDrawer();
+  } else {
+    openAppDrawer();
+  }
+});
+
+appDrawerBackdrop.addEventListener("click", () => {
+  closeAppDrawer();
+});
+
+signOutButtons.forEach((button) => {
+  button.addEventListener("click", async () => {
+    if (!supabaseClient) {
+      showView("auth");
+      return;
+    }
+
+    button.disabled = true;
+
+    try {
+      const { error } = await supabaseClient.auth.signOut();
+
+      if (error) {
+        throw error;
+      }
+
+      closeAppDrawer();
+      handleSignedOutState();
+    } catch (error) {
+      updateAuthMessage(error instanceof Error ? error.message : "No fue posible cerrar la sesion.", true);
+    } finally {
+      button.disabled = false;
+    }
+  });
 });
 
 pomodoroToggleButtons.forEach((button) => {
@@ -1636,9 +1711,17 @@ document.addEventListener("click", (event) => {
     return;
   }
 
+  if (target.closest("#app-drawer") || target.closest("#menu-toggle-button") || target.closest("#user-menu-button")) {
+    return;
+  }
+
   if (pomodoroMenuOpen) {
     pomodoroMenuOpen = false;
     syncPomodoroUi();
+  }
+
+  if (isDrawerOpen) {
+    closeAppDrawer();
   }
 });
 
