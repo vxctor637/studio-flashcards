@@ -474,14 +474,17 @@ async function saveAcademicProfile({ academicTrack, subjects }) {
   if (!authenticatedUser) {
     return;
   }
+
+  const currentProfile = getAcademicProfileFromUser(authenticatedUser);
+  const isFirstAcademicProfile = !currentProfile.academicTrack || currentProfile.subjects.length === 0;
   authenticatedUser.user_metadata = {
     ...authenticatedUser.user_metadata,
     academic_track: academicTrack,
     subjects,
     preferred_subject: subjects.includes(selectedStudySubject) ? selectedStudySubject : subjects[0] || "",
     academic_attention: {
-      menu: true,
-      edit: true
+      menu: isFirstAcademicProfile ? true : Boolean(authenticatedUser.user_metadata?.academic_attention?.menu),
+      edit: isFirstAcademicProfile ? true : Boolean(authenticatedUser.user_metadata?.academic_attention?.edit)
     }
   };
   saveCurrentFakeUser();
