@@ -277,19 +277,32 @@ body::before {
 .history-detail-panel .results-header {
   width: 100%;
   align-items: flex-start;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 16px;
 }
 
 .history-detail-panel .results-header > div {
   flex: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto auto;
 }
 
 .history-detail-panel .results-header > div .eyebrow {
+  grid-column: 1;
+  grid-row: 1;
   margin-bottom: 8px;
+}
+
+.history-detail-panel .results-header > div h2 {
+  grid-column: 1;
+  grid-row: 2;
 }
 
 .history-detail-panel .results-header > button {
   margin-left: auto;
-  align-self: flex-start;
+  align-self: end;
 }
 
 .history-subject-button {

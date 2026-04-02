@@ -732,9 +732,12 @@ function renderHistoryDetail(entry) {
   historyDetailContent.appendChild(wrapper);
 
   if (historyDetailPanel) {
-    historyDetailPanel.scrollIntoView({
-      behavior: "smooth",
-      block: "start"
+    const topbarOffset = appTopbar && !appTopbar.hidden ? appTopbar.offsetHeight + 28 : 24;
+    const detailTop = historyDetailPanel.getBoundingClientRect().top + window.scrollY - topbarOffset;
+
+    window.scrollTo({
+      top: Math.max(detailTop, 0),
+      behavior: "smooth"
     });
   }
 }
