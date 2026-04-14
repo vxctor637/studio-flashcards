@@ -1063,12 +1063,13 @@ function applyAuthenticatedUser(user) {
     : "Sesion ficticia activa en este navegador.";
   homeTopbarBadge.textContent = `Hola, ${firstName}`;
   homeHeroPill.textContent = isRealSession ? "Cuenta activa" : "Sesion de prueba activa";
+  homeHeroPill.hidden = true;
   homeHeroTitle.textContent = `${firstName}, elige como quieres estudiar hoy`;
   homeHeroCopy.textContent =
     isRealSession
       ? "Accede a tus herramientas de estudio con IA desde una portada clara y ordenada. Todo lo que hagas puede quedar asociado a tu cuenta."
       : "Accede a tus herramientas de estudio con IA desde una portada clara y ordenada. Esta sesion local nos permite probar funciones nuevas mas rapido.";
-  homePreviewLabel.textContent = "Tu sesion";
+  homePreviewLabel.textContent = isRealSession ? "Cuenta activa" : "Sesion local";
   homePreviewTag.textContent = isRealSession ? "Cuenta real" : "Sesion local";
   homePreviewTitle.textContent = displayName;
   homePreviewCopy.textContent = isRealSession

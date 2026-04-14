@@ -806,8 +806,12 @@ body::before {
 .hero-content {
   flex: 0.95;
   min-height: 0;
-  padding: 26px 28px;
+  padding: 22px 24px;
   border-radius: 26px;
+}
+
+.hero-content .hero-pill {
+  display: none;
 }
 
 .hero-preview {
@@ -838,13 +842,13 @@ body::before {
 
 .hero h1 {
   max-width: 10ch;
-  font-size: clamp(2.2rem, 4.6vw, 4.2rem);
+  font-size: clamp(2rem, 4vw, 3.6rem);
 }
 
 .hero-copy {
   max-width: 54ch;
-  margin: 14px 0 0;
-  font-size: 1rem;
+  margin: 12px 0 0;
+  font-size: 0.98rem;
 }
 
 .hero-actions {
@@ -883,16 +887,20 @@ body::before {
 }
 
 .preview-label {
-  margin: 0 0 14px;
-  font-size: 0.9rem;
-  color: var(--muted);
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 0.74rem;
+  color: var(--primary);
+  font-weight: 800;
 }
 
 .preview-card {
   display: grid;
-  gap: 10px;
+  gap: 8px;
   align-content: center;
-  padding: 16px 20px;
+  min-height: 140px;
+  padding: 18px 20px;
   border-radius: 20px;
   margin-bottom: 12px;
 }
@@ -955,6 +963,7 @@ body::before {
 .hero-preview {
   display: grid;
   gap: 12px;
+  align-content: start;
 }
 
 .preview-label {
@@ -964,6 +973,10 @@ body::before {
 .preview-card,
 .session-academic-panel {
   margin: 0;
+}
+
+.session-academic-panel {
+  min-height: 0;
 }
 
 .session-profile-form {
