@@ -697,16 +697,26 @@ body::before {
 
 .hero {
   grid-column: 1 / -1;
-  padding: 0;
+  padding: 24px;
   overflow: visible;
   z-index: 3;
-  background: transparent;
-  border: 0;
-  box-shadow: none;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(239, 246, 255, 0.9)),
+    var(--surface-strong);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
 }
 
 .hero::after {
-  display: none;
+  content: "";
+  position: absolute;
+  width: 320px;
+  height: 320px;
+  top: -120px;
+  right: -60px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(49, 195, 177, 0.16), transparent 68%);
 }
 
 .topbar,
@@ -781,9 +791,9 @@ body::before {
 }
 
 .hero-grid {
-  gap: 0;
+  gap: 18px;
   align-items: start;
-  justify-content: flex-end;
+  justify-content: center;
 }
 
 .hero-content,
@@ -807,12 +817,13 @@ body::before {
 .hero-preview {
   position: relative;
   z-index: 4;
-  flex: 0 1 580px;
-  width: min(580px, 100%);
+  flex: 0 1 1120px;
+  width: min(100%, 1120px);
   padding: 0;
   border: 0;
   box-shadow: none;
   background: transparent;
+  margin: 0 auto;
 }
 
 .hero-pill {
@@ -889,9 +900,10 @@ body::before {
   display: grid;
   gap: 8px;
   align-content: center;
-  min-height: 140px;
+  min-height: 0;
   padding: 18px 20px;
   border-radius: 20px;
+  width: 100%;
 }
 
 .preview-card strong {
@@ -938,6 +950,7 @@ body::before {
   background: rgba(255, 255, 255, 0.82);
   border: 1px solid var(--border);
   box-shadow: var(--shadow-soft);
+  width: 100%;
 }
 
 .session-academic-panel .section-heading {
@@ -953,6 +966,7 @@ body::before {
   display: grid;
   gap: 12px;
   align-content: start;
+  justify-items: stretch;
 }
 
 .preview-card,
