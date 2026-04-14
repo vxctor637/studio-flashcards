@@ -793,7 +793,6 @@ body::before {
 }
 
 .hero-content,
-.hero-preview,
 .tool-card,
 .summary-row,
 .preview-card,
@@ -818,11 +817,10 @@ body::before {
   position: relative;
   z-index: 4;
   flex: 1.05;
-  padding: 18px;
-  border-radius: 26px;
-  background:
-    linear-gradient(180deg, rgba(231, 251, 248, 0.9), rgba(255, 255, 255, 0.94)),
-    var(--surface);
+  padding: 0;
+  border: 0;
+  box-shadow: none;
+  background: transparent;
 }
 
 .hero-pill {
@@ -902,7 +900,6 @@ body::before {
   min-height: 140px;
   padding: 18px 20px;
   border-radius: 20px;
-  margin-bottom: 12px;
 }
 
 .preview-card strong {
@@ -964,10 +961,6 @@ body::before {
   display: grid;
   gap: 12px;
   align-content: start;
-}
-
-.preview-label {
-  margin: 0;
 }
 
 .preview-card,
