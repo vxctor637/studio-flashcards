@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Campus IA | Estudia con tarjetas inteligentes</title>
-    <link rel="stylesheet" href="./styles.css?v=20260402k" />
+    <link rel="stylesheet" href="./styles.css?v=20260414a" />
   </head>
   <body>
     <main class="app-shell">
@@ -132,22 +132,44 @@
             </div>
 
             <div class="auth-toggle">
-              <button type="button" class="auth-toggle-button is-active">Modo rapido</button>
+              <button type="button" class="auth-toggle-button is-active" id="auth-login-mode">Iniciar sesion</button>
+              <button type="button" class="auth-toggle-button" id="auth-signup-mode">Crear cuenta</button>
             </div>
 
             <form id="auth-form">
-              <label for="auth-full-name">Nombre visible</label>
+              <div id="auth-full-name-group">
+                <label for="auth-full-name">Nombre visible</label>
+                <input
+                  id="auth-full-name"
+                  name="authFullName"
+                  type="text"
+                  placeholder="Ej: Valentina Soto"
+                  autocomplete="name"
+                />
+              </div>
+
+              <label for="auth-email">Correo</label>
               <input
-                id="auth-full-name"
-                name="authFullName"
-                type="text"
-                placeholder="Ej: Valentina Soto"
-                autocomplete="name"
+                id="auth-email"
+                name="authEmail"
+                type="email"
+                placeholder="tucorreo@ejemplo.com"
+                autocomplete="email"
+                required
+              />
+
+              <label for="auth-password">Contrasena</label>
+              <input
+                id="auth-password"
+                name="authPassword"
+                type="password"
+                placeholder="Minimo 6 caracteres"
+                autocomplete="current-password"
                 required
               />
 
               <p id="auth-status-message" class="status-message auth-status-message">
-                Escribe un nombre y entra a una sesion ficticia guardada en este navegador para probar funciones rapidamente.
+                Inicia sesion con tu cuenta real de Supabase para probar la app completa.
               </p>
 
               <button type="submit" id="auth-submit-button">Entrar a mi espacio</button>
@@ -1168,6 +1190,7 @@
     </template>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <script src="./app.js?v=20260402k"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="./app.js?v=20260414a"></script>
   </body>
 </html>

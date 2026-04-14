@@ -1,9 +1,14 @@
 const form = document.querySelector("#flashcard-form");
 const authForm = document.querySelector("#auth-form");
 const authFullNameLabel = document.querySelector('label[for="auth-full-name"]');
+const authFullNameGroup = document.querySelector("#auth-full-name-group");
 const authFullNameInput = document.querySelector("#auth-full-name");
+const authEmailInput = document.querySelector("#auth-email");
+const authPasswordInput = document.querySelector("#auth-password");
 const authStatusMessage = document.querySelector("#auth-status-message");
 const authSubmitButton = document.querySelector("#auth-submit-button");
+const authLoginModeButton = document.querySelector("#auth-login-mode");
+const authSignupModeButton = document.querySelector("#auth-signup-mode");
 const signOutButtons = document.querySelectorAll("[data-sign-out]");
 const appTopbar = document.querySelector("#app-topbar");
 const appDrawer = document.querySelector("#app-drawer");
@@ -233,6 +238,9 @@ let academicAttention = {
   menu: false,
   edit: false
 };
+let authMode = "login";
+let supabaseClient = null;
+let persistUserMetadataPromise = Promise.resolve();
 const pomodoroState = {
   studyMinutes: 25,
   breakMinutes: 5,
@@ -328,8 +336,56 @@ function writeFakeProfiles(profiles) {
   window.localStorage.setItem(FAKE_PROFILES_KEY, JSON.stringify(profiles));
 }
 
+async function loadSupabaseClient() {
+  if (!window.supabase?.createClient) {
+    throw new Error("La libreria de Supabase no esta disponible en el navegador.");
+  }
+
+  const response = await fetch("/api/config");
+
+  if (!response.ok) {
+    const payload = await response.json().catch(() => null);
+    throw new Error(payload?.error || "No fue posible cargar la configuracion de Supabase.");
+  }
+
+  const data = await response.json();
+  return window.supabase.createClient(data.supabaseUrl, data.supabaseAnonKey);
+}
+
+function queuePersistUserMetadata() {
+  if (!supabaseClient || !authenticatedUser?.email) {
+    return persistUserMetadataPromise;
+  }
+
+  const metadata = { ...(authenticatedUser.user_metadata || {}) };
+  persistUserMetadataPromise = persistUserMetadataPromise
+    .catch(() => {})
+    .then(async () => {
+      const { error, data } = await supabaseClient.auth.updateUser({
+        data: metadata
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (data?.user) {
+        authenticatedUser = data.user;
+      }
+    });
+
+  return persistUserMetadataPromise;
+}
+
 function saveCurrentFakeUser() {
   if (!authenticatedUser) {
+    return;
+  }
+
+  if (supabaseClient && authenticatedUser.email) {
+    queuePersistUserMetadata().catch((error) => {
+      console.warn("No fue posible persistir los datos del usuario en Supabase.", error);
+    });
     return;
   }
 
@@ -375,6 +431,20 @@ function getStoredFakeSessionUser() {
 
 function clearFakeSession() {
   window.localStorage.removeItem(FAKE_SESSION_KEY);
+}
+
+function updateAuthModeUi() {
+  const isSignup = authMode === "signup";
+
+  authLoginModeButton.classList.toggle("is-active", !isSignup);
+  authSignupModeButton.classList.toggle("is-active", isSignup);
+  authFullNameGroup.hidden = !isSignup;
+  authFullNameInput.required = isSignup;
+  authPasswordInput.autocomplete = isSignup ? "new-password" : "current-password";
+  authStatusMessage.textContent = isSignup
+    ? "Crea tu cuenta con correo y contrasena para guardar tu progreso real."
+    : "Inicia sesion con tu cuenta real de Supabase para probar la app completa.";
+  authSubmitButton.textContent = isSignup ? "Crear cuenta" : "Entrar a mi espacio";
 }
 
 function syncAcademicAttention() {
@@ -986,17 +1056,24 @@ function applyAuthenticatedUser(user) {
 
   const displayName = getDisplayNameFromUser(user);
   const firstName = displayName.split(/\s+/)[0] || displayName;
+  const isRealSession = Boolean(user.email);
 
-  homeBrandCopy.textContent = "Sesion ficticia activa en este navegador.";
+  homeBrandCopy.textContent = isRealSession
+    ? "Tu cuenta real esta activa y lista para guardar tu progreso."
+    : "Sesion ficticia activa en este navegador.";
   homeTopbarBadge.textContent = `Hola, ${firstName}`;
-  homeHeroPill.textContent = "Sesion de prueba activa";
+  homeHeroPill.textContent = isRealSession ? "Cuenta activa" : "Sesion de prueba activa";
   homeHeroTitle.textContent = `${firstName}, elige como quieres estudiar hoy`;
   homeHeroCopy.textContent =
-    "Accede a tus herramientas de estudio con IA desde una portada clara y ordenada. Esta sesion local nos permite probar funciones nuevas mas rapido.";
+    isRealSession
+      ? "Accede a tus herramientas de estudio con IA desde una portada clara y ordenada. Todo lo que hagas puede quedar asociado a tu cuenta."
+      : "Accede a tus herramientas de estudio con IA desde una portada clara y ordenada. Esta sesion local nos permite probar funciones nuevas mas rapido.";
   homePreviewLabel.textContent = "Tu sesion";
-  homePreviewTag.textContent = "Sesion local";
+  homePreviewTag.textContent = isRealSession ? "Cuenta real" : "Sesion local";
   homePreviewTitle.textContent = displayName;
-  homePreviewCopy.textContent = "Tu informacion queda guardada en este navegador para seguir probando funciones sin iniciar sesion real.";
+  homePreviewCopy.textContent = isRealSession
+    ? "Tu perfil academico, historial y configuraciones quedan vinculados a tu usuario autenticado."
+    : "Tu informacion queda guardada en este navegador para seguir probando funciones sin iniciar sesion real.";
   appUserInitial.textContent = firstName.charAt(0).toUpperCase();
   renderAcademicProfile(user);
   renderStudyHistory(user);
@@ -2740,28 +2817,90 @@ authForm.addEventListener("submit", async (event) => {
   event.preventDefault();
 
   const fullName = authFullNameInput.value.trim();
+  const email = authEmailInput.value.trim();
+  const password = authPasswordInput.value.trim();
 
-  if (!fullName) {
-    updateAuthMessage("Escribe tu nombre para entrar a la sesion ficticia.", true);
+  if (authMode === "signup" && !fullName) {
+    updateAuthMessage("Escribe tu nombre para crear la cuenta.", true);
+    return;
+  }
+
+  if (!email) {
+    updateAuthMessage("Escribe tu correo para continuar.", true);
+    return;
+  }
+
+  if (!password) {
+    updateAuthMessage("Escribe tu contrasena para continuar.", true);
     return;
   }
 
   authSubmitButton.disabled = true;
 
   try {
-    const profiles = readFakeProfiles();
-    const profileKey = normalizeStorageKey(fullName);
-    const fakeUser = profiles[profileKey] || buildFakeUser(fullName);
-    authenticatedUser = fakeUser;
-    saveCurrentFakeUser();
-    applyAuthenticatedUser(fakeUser);
-    updateAuthMessage("Sesion ficticia iniciada correctamente.");
-    showView("home");
+    if (!supabaseClient) {
+      throw new Error("Supabase no esta configurado todavia. Revisa /api/config y las variables de entorno.");
+    }
+
+    if (authMode === "signup") {
+      const { data, error } = await supabaseClient.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+            academic_track: "",
+            subjects: [],
+            preferred_subject: "",
+            academic_attention: { menu: false, edit: false }
+          }
+        }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (data.session?.user) {
+        applyAuthenticatedUser(data.session.user);
+        updateAuthMessage("Cuenta creada e iniciada correctamente.");
+        showView("home");
+      } else {
+        updateAuthMessage("Cuenta creada. Revisa tu correo si Supabase exige confirmacion antes de iniciar sesion.");
+      }
+    } else {
+      const { data, error } = await supabaseClient.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (!data.user) {
+        throw new Error("No fue posible iniciar la sesion.");
+      }
+
+      applyAuthenticatedUser(data.user);
+      updateAuthMessage("Sesion iniciada correctamente.");
+      showView("home");
+    }
   } catch (error) {
-    updateAuthMessage(error instanceof Error ? error.message : "No fue posible iniciar la sesion ficticia.", true);
+    updateAuthMessage(error instanceof Error ? error.message : "No fue posible iniciar sesion.", true);
   } finally {
     authSubmitButton.disabled = false;
   }
+});
+
+authLoginModeButton.addEventListener("click", () => {
+  authMode = "login";
+  updateAuthModeUi();
+});
+
+authSignupModeButton.addEventListener("click", () => {
+  authMode = "signup";
+  updateAuthModeUi();
 });
 
 openViewButtons.forEach((button) => {
@@ -2913,16 +3052,28 @@ signOutButtons.forEach((button) => {
   button.addEventListener("click", () => {
     button.disabled = true;
 
-    try {
-      clearFakeSession();
-      closeAppDrawer();
-      closeSubjectMenu();
-      handleSignedOutState();
-    } catch (error) {
-      updateAuthMessage(error instanceof Error ? error.message : "No fue posible cerrar la sesion.", true);
-    } finally {
-      button.disabled = false;
-    }
+    Promise.resolve()
+      .then(async () => {
+        if (supabaseClient && authenticatedUser?.email) {
+          const { error } = await supabaseClient.auth.signOut();
+
+          if (error) {
+            throw error;
+          }
+        } else {
+          clearFakeSession();
+        }
+
+        closeAppDrawer();
+        closeSubjectMenu();
+        handleSignedOutState();
+      })
+      .catch((error) => {
+        updateAuthMessage(error instanceof Error ? error.message : "No fue posible cerrar la sesion.", true);
+      })
+      .finally(() => {
+        button.disabled = false;
+      });
   });
 });
 
@@ -3034,15 +3185,60 @@ document.addEventListener("click", (event) => {
 window.addEventListener("scroll", updateFloatingHomeButtons, { passive: true });
 window.addEventListener("resize", updateFloatingHomeButtons);
 syncPomodoroUi();
-const initialFakeSessionUser = getStoredFakeSessionUser();
-if (initialFakeSessionUser) {
-  authenticatedUser = initialFakeSessionUser;
-  applyAuthenticatedUser(initialFakeSessionUser);
-  showView("home");
-} else {
-  showView("auth");
-  authFullNameInput.focus();
-}
+updateAuthModeUi();
+
+Promise.resolve()
+  .then(async () => {
+    try {
+      supabaseClient = await loadSupabaseClient();
+      const {
+        data: { session }
+      } = await supabaseClient.auth.getSession();
+
+      supabaseClient.auth.onAuthStateChange((event, sessionData) => {
+        if (event === "SIGNED_OUT") {
+          handleSignedOutState("La sesion fue cerrada correctamente.");
+          return;
+        }
+
+        if (sessionData?.user) {
+          applyAuthenticatedUser(sessionData.user);
+        }
+      });
+
+      if (session?.user) {
+        applyAuthenticatedUser(session.user);
+        showView("home");
+        return;
+      }
+
+      showView("auth");
+      authEmailInput.focus();
+    } catch (error) {
+      const initialFakeSessionUser = getStoredFakeSessionUser();
+
+      if (initialFakeSessionUser) {
+        authenticatedUser = initialFakeSessionUser;
+        applyAuthenticatedUser(initialFakeSessionUser);
+        updateAuthMessage("Supabase no esta disponible ahora. Se recupero la sesion local de respaldo.");
+        showView("home");
+        return;
+      }
+
+      updateAuthMessage(
+        error instanceof Error
+          ? `${error.message} Puedes iniciar sesion localmente si reactivamos el modo rapido.`
+          : "No fue posible inicializar el acceso con Supabase.",
+        true
+      );
+      showView("auth");
+      authEmailInput.focus();
+    }
+  })
+  .catch(() => {
+    showView("auth");
+    authEmailInput.focus();
+  });
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();

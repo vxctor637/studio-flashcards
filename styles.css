@@ -1,6 +1,6 @@
 :root {
-  --bg: #f7f9fc;
-  --bg-soft: #eef4ff;
+  --bg: #34373e;
+  --bg-soft: #454952;
   --surface: rgba(255, 255, 255, 0.9);
   --surface-strong: #ffffff;
   --text: #162033;
@@ -33,9 +33,9 @@ body {
   font-family: "Segoe UI", "Trebuchet MS", sans-serif;
   color: var(--text);
   background:
-    radial-gradient(circle at top left, rgba(49, 195, 177, 0.12), transparent 24%),
-    radial-gradient(circle at top right, rgba(47, 109, 246, 0.12), transparent 26%),
-    linear-gradient(180deg, #ffffff 0%, var(--bg) 52%, #fdfefe 100%);
+    radial-gradient(circle at top left, rgba(49, 195, 177, 0.14), transparent 24%),
+    radial-gradient(circle at top right, rgba(47, 109, 246, 0.16), transparent 26%),
+    linear-gradient(180deg, #3d4148 0%, var(--bg) 52%, #2d3036 100%);
 }
 
 body.menu-open {
