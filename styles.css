@@ -889,17 +889,12 @@ body::before {
 }
 
 .preview-card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 18px;
+  display: grid;
+  gap: 10px;
+  align-content: center;
   padding: 16px 20px;
   border-radius: 20px;
   margin-bottom: 12px;
-}
-
-.preview-card > * {
-  flex-shrink: 0;
 }
 
 .preview-card strong {
@@ -910,7 +905,6 @@ body::before {
 
 .preview-card p {
   margin: 0;
-  flex: 1;
 }
 
 .preview-tag {
