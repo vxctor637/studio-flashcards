@@ -697,23 +697,16 @@ body::before {
 
 .hero {
   grid-column: 1 / -1;
-  padding: 28px;
+  padding: 0;
   overflow: visible;
   z-index: 3;
-  background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(239, 246, 255, 0.9)),
-    var(--surface-strong);
+  background: transparent;
+  border: 0;
+  box-shadow: none;
 }
 
 .hero::after {
-  content: "";
-  position: absolute;
-  width: 320px;
-  height: 320px;
-  top: -120px;
-  right: -60px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(49, 195, 177, 0.16), transparent 68%);
+  display: none;
 }
 
 .topbar,
@@ -730,7 +723,7 @@ body::before {
   justify-content: space-between;
   gap: 16px;
   align-items: center;
-  margin-bottom: 28px;
+  margin-bottom: 18px;
 }
 
 .topbar-actions {
@@ -788,8 +781,9 @@ body::before {
 }
 
 .hero-grid {
-  gap: 22px;
+  gap: 0;
   align-items: start;
+  justify-content: flex-end;
 }
 
 .hero-content,
@@ -803,10 +797,7 @@ body::before {
 }
 
 .hero-content {
-  flex: 0.95;
-  min-height: 0;
-  padding: 22px 24px;
-  border-radius: 26px;
+  display: none;
 }
 
 .hero-content .hero-pill {
@@ -816,7 +807,8 @@ body::before {
 .hero-preview {
   position: relative;
   z-index: 4;
-  flex: 1.05;
+  flex: 0 1 580px;
+  width: min(580px, 100%);
   padding: 0;
   border: 0;
   box-shadow: none;
