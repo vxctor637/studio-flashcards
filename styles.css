@@ -789,7 +789,7 @@ body::before {
 
 .hero-grid {
   gap: 22px;
-  align-items: stretch;
+  align-items: start;
 }
 
 .hero-content,
@@ -804,16 +804,17 @@ body::before {
 }
 
 .hero-content {
-  flex: 1.25;
-  padding: 32px;
+  flex: 0.95;
+  min-height: 0;
+  padding: 26px 28px;
   border-radius: 26px;
 }
 
 .hero-preview {
   position: relative;
   z-index: 4;
-  flex: 0.75;
-  padding: 24px;
+  flex: 1.05;
+  padding: 18px;
   border-radius: 26px;
   background:
     linear-gradient(180deg, rgba(231, 251, 248, 0.9), rgba(255, 255, 255, 0.94)),
@@ -836,14 +837,14 @@ body::before {
 }
 
 .hero h1 {
-  max-width: 11ch;
-  font-size: clamp(2.7rem, 6vw, 5.4rem);
+  max-width: 10ch;
+  font-size: clamp(2.2rem, 4.6vw, 4.2rem);
 }
 
 .hero-copy {
-  max-width: 62ch;
-  margin: 18px 0 0;
-  font-size: 1.08rem;
+  max-width: 54ch;
+  margin: 14px 0 0;
+  font-size: 1rem;
 }
 
 .hero-actions {
@@ -888,19 +889,28 @@ body::before {
 }
 
 .preview-card {
-  padding: 22px;
-  border-radius: 22px;
-  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 16px 20px;
+  border-radius: 20px;
+  margin-bottom: 12px;
+}
+
+.preview-card > * {
+  flex-shrink: 0;
 }
 
 .preview-card strong {
   display: block;
-  margin-top: 12px;
-  font-size: 1.25rem;
+  margin-top: 0;
+  font-size: 1.1rem;
 }
 
 .preview-card p {
-  margin: 10px 0 0;
+  margin: 0;
+  flex: 1;
 }
 
 .preview-tag {
@@ -931,12 +941,35 @@ body::before {
 }
 
 .session-academic-panel {
-  margin-top: 14px;
-  padding: 20px;
+  margin-top: 12px;
+  padding: 18px 20px;
   border-radius: 24px;
   background: rgba(255, 255, 255, 0.82);
   border: 1px solid var(--border);
   box-shadow: var(--shadow-soft);
+}
+
+.session-academic-panel .section-heading {
+  margin-bottom: 12px;
+}
+
+.session-academic-summary {
+  display: grid;
+  gap: 8px;
+}
+
+.hero-preview {
+  display: grid;
+  gap: 12px;
+}
+
+.preview-label {
+  margin: 0;
+}
+
+.preview-card,
+.session-academic-panel {
+  margin: 0;
 }
 
 .session-profile-form {
