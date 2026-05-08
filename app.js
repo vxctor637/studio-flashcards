@@ -62,6 +62,11 @@ const goHomeButtons = document.querySelectorAll("[data-go-home]");
 const moduleHomeButtons = document.querySelectorAll(".module-home-button");
 const moduleFloatStacks = document.querySelectorAll(".module-float-stack");
 const moduleSubjectSelectors = document.querySelectorAll("[data-module-subject-selector]");
+const draftWarningBackdrop = document.querySelector("#draft-warning-backdrop");
+const draftWarningMessage = document.querySelector("#draft-warning-message");
+const draftWarningSkip = document.querySelector("#draft-warning-skip");
+const draftWarningCancel = document.querySelector("#draft-warning-cancel");
+const draftWarningAccept = document.querySelector("#draft-warning-accept");
 const pomodoroWidgets = document.querySelectorAll("[data-pomodoro-widget]");
 const pomodoroToggleButtons = document.querySelectorAll("[data-pomodoro-toggle]");
 const pomodoroPanels = document.querySelectorAll("[data-pomodoro-panel]");
@@ -253,6 +258,8 @@ const PDF_TEXT_LIMIT = 18000;
 const MIN_STUDY_NOTE_WORDS = 500;
 const FAKE_SESSION_KEY = "campusia.fakeSession";
 const FAKE_PROFILES_KEY = "campusia.fakeProfiles";
+const DRAFT_WARNING_PREFS_KEY = "campusia.draftWarningPrefs";
+let draftWarningResolver = null;
 
 if (window.pdfjsLib) {
   window.pdfjsLib.GlobalWorkerOptions.workerSrc =
@@ -434,6 +441,141 @@ function clearFakeSession() {
   window.localStorage.removeItem(FAKE_SESSION_KEY);
 }
 
+function getDraftWarningPrefs() {
+  try {
+    const rawPrefs = window.localStorage.getItem(DRAFT_WARNING_PREFS_KEY);
+    return rawPrefs ? JSON.parse(rawPrefs) : {};
+  } catch (error) {
+    return {};
+  }
+}
+
+function saveDraftWarningPrefs(prefs) {
+  window.localStorage.setItem(DRAFT_WARNING_PREFS_KEY, JSON.stringify(prefs));
+}
+
+function showDraftWarning(message, preferenceKey) {
+  const prefs = getDraftWarningPrefs();
+
+  if (prefs[preferenceKey]) {
+    return Promise.resolve(true);
+  }
+
+  if (!draftWarningBackdrop || !draftWarningMessage || !draftWarningSkip) {
+    return Promise.resolve(true);
+  }
+
+  draftWarningMessage.textContent = message;
+  draftWarningSkip.checked = false;
+  draftWarningBackdrop.hidden = false;
+
+  return new Promise((resolve) => {
+    draftWarningResolver = (accepted) => {
+      if (accepted && draftWarningSkip.checked) {
+        saveDraftWarningPrefs({
+          ...prefs,
+          [preferenceKey]: true
+        });
+      }
+
+      draftWarningBackdrop.hidden = true;
+      draftWarningResolver = null;
+      resolve(accepted);
+    };
+  });
+}
+
+function resolveDraftWarning(accepted) {
+  if (typeof draftWarningResolver === "function") {
+    draftWarningResolver(accepted);
+  }
+}
+
+function getActiveModuleDraftState() {
+  const activeView = getActiveView();
+
+  if (!activeView) {
+    return null;
+  }
+
+  if (activeView.id === "flashcards-view") {
+    const hasDraft = Boolean(topicInput.value.trim() || notesInput.value.trim());
+    return {
+      hasDraft,
+      clear() {
+        topicInput.value = "";
+        notesInput.value = "";
+        pdfFileInput.value = "";
+        updatePdfStatus("Puedes pegar apuntes, subir un PDF o combinar ambas opciones.");
+      }
+    };
+  }
+
+  if (activeView.id === "summaries-view") {
+    const conceptInputs = Array.from(keyConceptsList.querySelectorAll('input[name="keyConcept"]'));
+    const hasConcepts = conceptInputs.some((input) => input.value.trim());
+    const hasDraft = Boolean(summaryTopicInput.value.trim() || summaryNotesInput.value.trim() || hasConcepts);
+    return {
+      hasDraft,
+      clear() {
+        summaryTopicInput.value = "";
+        summaryNotesInput.value = "";
+        keyConceptsList.innerHTML = "";
+        conceptCount = 0;
+        addConceptInput();
+      }
+    };
+  }
+
+  if (activeView.id === "quiz-view") {
+    const hasDraft = Boolean(quizTopicInput.value.trim() || quizNotesInput.value.trim());
+    return {
+      hasDraft,
+      clear() {
+        quizTopicInput.value = "";
+        quizNotesInput.value = "";
+      }
+    };
+  }
+
+  if (activeView.id === "assessment-view") {
+    const hasDraft = Boolean(assessmentTopicInput.value.trim() || assessmentNotesInput.value.trim());
+    return {
+      hasDraft,
+      clear() {
+        assessmentTopicInput.value = "";
+        assessmentNotesInput.value = "";
+      }
+    };
+  }
+
+  return null;
+}
+
+async function confirmDraftReset(actionType) {
+  const draftState = getActiveModuleDraftState();
+
+  if (!draftState || !draftState.hasDraft) {
+    return true;
+  }
+
+  const isGoHome = actionType === "go-home";
+  const accepted = await showDraftWarning(
+    isGoHome
+      ? "Si vuelves al inicio, el texto que ya escribiste en este modulo se borrara."
+      : "Si cambias de ramo, el texto que ya escribiste en este modulo se borrara.",
+    isGoHome ? "goHome" : "changeSubject"
+  );
+
+  if (!accepted) {
+    return false;
+  }
+
+  draftState.clear();
+  syncSelectedSubjectIntoModules();
+  return true;
+}
+
 function updateAuthModeUi() {
   const isSignup = authMode === "signup";
 
@@ -476,6 +618,22 @@ function setSelectedStudySubject(subject, { persist = true, rerender = true } = 
 
   renderModuleSubjectSelectors();
   renderStudyAnalysis();
+}
+
+async function attemptSubjectChange(subject) {
+  if (subject === selectedStudySubject) {
+    return;
+  }
+
+  const canContinue = await confirmDraftReset("change-subject");
+
+  if (!canContinue) {
+    renderModuleSubjectSelectors();
+    renderSubjectMenu();
+    return;
+  }
+
+  setSelectedStudySubject(subject);
 }
 
 function getStudyHistory(user) {
@@ -996,8 +1154,8 @@ function renderAcademicProfile(user) {
     button.className = `session-subject-button ${subject === selectedStudySubject ? "is-active" : ""}`;
     button.textContent = subject;
 
-    button.addEventListener("click", () => {
-      setSelectedStudySubject(subject);
+    button.addEventListener("click", async () => {
+      await attemptSubjectChange(subject);
     });
 
     sessionSubjectButtons.appendChild(button);
@@ -1160,8 +1318,8 @@ function renderModuleSubjectSelectors() {
       option.type = "button";
       option.className = `module-subject-option ${subject === selectedStudySubject ? "is-active" : ""}`;
       option.textContent = subject;
-      option.addEventListener("click", () => {
-        setSelectedStudySubject(subject);
+      option.addEventListener("click", async () => {
+        await attemptSubjectChange(subject);
         closeModuleSubjectMenus();
       });
       menu.appendChild(option);
@@ -1182,8 +1340,8 @@ function renderSubjectMenu() {
     button.type = "button";
     button.className = `secondary drawer-link ${subject === selectedStudySubject ? "is-active" : ""}`;
     button.textContent = subject;
-    button.addEventListener("click", () => {
-      setSelectedStudySubject(subject);
+    button.addEventListener("click", async () => {
+      await attemptSubjectChange(subject);
       closeSubjectMenu();
     });
     subjectMenuList.appendChild(button);
@@ -2961,8 +3119,34 @@ openViewButtons.forEach((button) => {
   });
 });
 
+if (draftWarningAccept) {
+  draftWarningAccept.addEventListener("click", () => {
+    resolveDraftWarning(true);
+  });
+}
+
+if (draftWarningCancel) {
+  draftWarningCancel.addEventListener("click", () => {
+    resolveDraftWarning(false);
+  });
+}
+
+if (draftWarningBackdrop) {
+  draftWarningBackdrop.addEventListener("click", (event) => {
+    if (event.target === draftWarningBackdrop) {
+      resolveDraftWarning(false);
+    }
+  });
+}
+
 goHomeButtons.forEach((button) => {
-  button.addEventListener("click", () => {
+  button.addEventListener("click", async () => {
+    const canContinue = await confirmDraftReset("go-home");
+
+    if (!canContinue) {
+      return;
+    }
+
     showView("home");
   });
 });

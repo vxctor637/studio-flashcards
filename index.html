@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Campus IA | Estudia con tarjetas inteligentes</title>
-    <link rel="stylesheet" href="./styles.css?v=20260507a" />
+    <link rel="stylesheet" href="./styles.css?v=20260507b" />
   </head>
   <body>
     <main class="app-shell">
@@ -1172,6 +1172,24 @@
       </section>
     </main>
 
+    <div id="draft-warning-backdrop" class="draft-warning-backdrop" hidden>
+      <div class="draft-warning-modal" role="dialog" aria-modal="true" aria-labelledby="draft-warning-title">
+        <p class="eyebrow">Advertencia</p>
+        <h2 id="draft-warning-title">Se borrara el texto escrito</h2>
+        <p id="draft-warning-message" class="draft-warning-copy">
+          Si continuas, el texto que ya escribiste en este modulo se eliminara.
+        </p>
+        <label class="draft-warning-check">
+          <input type="checkbox" id="draft-warning-skip" />
+          <span>No volver a mostrar</span>
+        </label>
+        <div class="draft-warning-actions">
+          <button type="button" class="secondary" id="draft-warning-cancel">Cancelar</button>
+          <button type="button" id="draft-warning-accept">Aceptar</button>
+        </div>
+      </div>
+    </div>
+
     <template id="card-template">
       <article class="flashcard" tabindex="0">
         <div class="flashcard-inner">
@@ -1189,6 +1207,6 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="./app.js?v=20260507a"></script>
+    <script src="./app.js?v=20260507b"></script>
   </body>
 </html>
