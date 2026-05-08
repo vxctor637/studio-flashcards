@@ -2013,6 +2013,13 @@ button[type="submit"] {
   margin-top: 24px;
 }
 
+.draft-warning-actions #draft-warning-accept {
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 16px 34px rgba(47, 109, 246, 0.28);
+}
+
 .empty-state {
   margin-top: 22px;
   padding: 34px 20px;
