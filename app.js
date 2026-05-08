@@ -156,7 +156,7 @@ const assessmentLiveScore = document.querySelector("#assessment-live-score");
 const assessmentQuestion = document.querySelector("#assessment-question");
 const assessmentOptions = document.querySelector("#assessment-options");
 const assessmentFeedback = document.querySelector("#assessment-feedback");
-const nextAssessmentQuestionButton = document.querySelector("#next-assessment-question-button");
+const submitAssessmentButton = document.querySelector("#submit-assessment-button");
 const assessmentSummary = document.querySelector("#assessment-summary");
 const assessmentSummaryTitle = document.querySelector("#assessment-summary-title");
 const assessmentSummaryScore = document.querySelector("#assessment-summary-score");
@@ -226,6 +226,7 @@ let currentAssessmentIndex = 0;
 let currentAssessmentScore = 0;
 let currentAssessmentAnswered = false;
 let currentAssessmentResults = [];
+let assessmentSubmitted = false;
 let lastAssessmentRequestData = null;
 let currentAssessmentHistoryEntryId = "";
 let pomodoroInterval = null;
@@ -2432,7 +2433,9 @@ function updateAssessmentScoreboard() {
   assessmentLiveScore.textContent = `Puntaje: ${currentAssessmentScore}`;
   assessmentProgressLabel.textContent =
     currentAssessment.length > 0
-      ? `${Math.min(currentAssessmentIndex + 1, currentAssessment.length)}/${currentAssessment.length}`
+      ? assessmentSubmitted
+        ? `Entregada · ${currentAssessment.length} preguntas`
+        : `Pendiente · ${currentAssessment.length} preguntas`
       : "Sin iniciar";
 }
 
@@ -2441,59 +2444,66 @@ function renderAssessmentQuestion() {
     return;
   }
 
-  const questionData = currentAssessment[currentAssessmentIndex];
-  assessmentStep.textContent = `Pregunta ${currentAssessmentIndex + 1} de ${currentAssessment.length}`;
-  assessmentQuestion.textContent = questionData.question;
+  assessmentStep.textContent = `Evaluacion de ${currentAssessment.length} preguntas`;
+  assessmentQuestion.textContent = "Marca una sola alternativa por pregunta y luego entrega la evaluacion.";
   assessmentOptions.innerHTML = "";
   assessmentFeedback.hidden = true;
   assessmentFeedback.textContent = "";
-  nextAssessmentQuestionButton.hidden = true;
-  currentAssessmentAnswered = false;
+  assessmentSubmitted = false;
 
-  questionData.options.forEach((option, index) => {
-    const optionButton = document.createElement("button");
-    optionButton.type = "button";
-    optionButton.className = "quiz-option";
-    optionButton.textContent = option;
-    optionButton.addEventListener("click", () => {
-      if (currentAssessmentAnswered) {
-        return;
-      }
+  currentAssessment.forEach((questionData, questionIndex) => {
+    const itemNode = document.createElement("article");
+    itemNode.className = "assessment-item";
 
-      currentAssessmentAnswered = true;
-      const isCorrect = index === questionData.correctIndex;
-      currentAssessmentResults[currentAssessmentIndex] = {
-        selectedIndex: index,
-        correct: isCorrect
-      };
+    const titleNode = document.createElement("h4");
+    titleNode.className = "assessment-item-title";
+    titleNode.textContent = `${questionIndex + 1}. ${questionData.question}`;
 
-      Array.from(assessmentOptions.children).forEach((buttonNode, buttonIndex) => {
-        buttonNode.disabled = true;
-        buttonNode.classList.toggle("is-correct", buttonIndex === questionData.correctIndex);
-        buttonNode.classList.toggle("is-incorrect", buttonIndex === index && !isCorrect);
+    const optionsNode = document.createElement("div");
+    optionsNode.className = "assessment-item-options";
+
+    questionData.options.forEach((option, optionIndex) => {
+      const optionLabel = document.createElement("label");
+      optionLabel.className = "assessment-option";
+
+      const inputNode = document.createElement("input");
+      inputNode.type = "radio";
+      inputNode.name = `assessment-question-${questionIndex}`;
+      inputNode.value = String(optionIndex);
+      inputNode.checked = currentAssessmentResults[questionIndex]?.selectedIndex === optionIndex;
+
+      inputNode.addEventListener("change", () => {
+        currentAssessmentResults[questionIndex] = {
+          selectedIndex: optionIndex,
+          correct: optionIndex === questionData.correctIndex
+        };
+
+        optionsNode.querySelectorAll(".assessment-option").forEach((node, nodeIndex) => {
+          node.classList.toggle("is-selected", nodeIndex === optionIndex);
+        });
       });
 
-      if (isCorrect) {
-        currentAssessmentScore += 1;
-      }
+      const markerNode = document.createElement("span");
+      markerNode.className = "assessment-option-marker";
+      markerNode.setAttribute("aria-hidden", "true");
 
-      updateAssessmentScoreboard();
-      assessmentFeedback.hidden = false;
-      assessmentFeedback.textContent = isCorrect
-        ? `Correcto. ${questionData.explanation}`
-        : `Incorrecto. ${questionData.explanation}`;
+      const textNode = document.createElement("span");
+      textNode.className = "assessment-option-text";
+      textNode.textContent = option;
 
-      if (currentAssessmentIndex < currentAssessment.length - 1) {
-        nextAssessmentQuestionButton.hidden = false;
-      } else {
-        window.setTimeout(() => {
-          renderAssessmentSummary();
-        }, 900);
-      }
+      optionLabel.append(inputNode, markerNode, textNode);
+      optionsNode.appendChild(optionLabel);
     });
 
-    assessmentOptions.appendChild(optionButton);
+    itemNode.append(titleNode, optionsNode);
+    assessmentOptions.appendChild(itemNode);
   });
+
+  if (submitAssessmentButton) {
+    submitAssessmentButton.hidden = false;
+    submitAssessmentButton.disabled = false;
+    submitAssessmentButton.textContent = "Entregar evaluacion";
+  }
 }
 
 function startAssessment(assessmentData) {
@@ -2501,6 +2511,7 @@ function startAssessment(assessmentData) {
   currentAssessmentIndex = 0;
   currentAssessmentScore = 0;
   currentAssessmentResults = currentAssessment.map(() => createEmptyAssessmentResult());
+  assessmentSubmitted = false;
   assessmentEmptyState.hidden = true;
   assessmentPlayer.hidden = false;
   assessmentSummary.hidden = true;
@@ -2512,6 +2523,7 @@ function renderAssessmentSummary() {
   const totalQuestions = currentAssessment.length;
   const correctAnswers = currentAssessmentResults.filter((result) => result.correct).length;
   currentAssessmentScore = correctAnswers;
+  assessmentSubmitted = true;
   updateAssessmentScoreboard();
 
   assessmentPlayer.hidden = true;
@@ -2563,6 +2575,33 @@ function renderAssessmentSummary() {
       })
     }
   );
+}
+
+function submitAssessment() {
+  if (currentAssessment.length === 0) {
+    return;
+  }
+
+  const unansweredCount = currentAssessmentResults.filter((result) => result.selectedIndex < 0).length;
+
+  if (unansweredCount > 0) {
+    assessmentFeedback.hidden = false;
+    assessmentFeedback.textContent =
+      unansweredCount === 1
+        ? "Te falta responder 1 pregunta antes de entregar la evaluacion."
+        : `Te faltan responder ${unansweredCount} preguntas antes de entregar la evaluacion.`;
+    return;
+  }
+
+  currentAssessmentResults = currentAssessment.map((question, index) => {
+    const result = currentAssessmentResults[index] || createEmptyAssessmentResult();
+    return {
+      selectedIndex: result.selectedIndex,
+      correct: result.selectedIndex === question.correctIndex
+    };
+  });
+
+  renderAssessmentSummary();
 }
 
 function buildAnalysisData(user, subject) {
@@ -2950,7 +2989,13 @@ function resetAssessmentResultsView() {
   currentAssessmentIndex = 0;
   currentAssessmentScore = 0;
   currentAssessmentResults = [];
+  assessmentSubmitted = false;
   currentAssessmentHistoryEntryId = "";
+  if (submitAssessmentButton) {
+    submitAssessmentButton.hidden = false;
+    submitAssessmentButton.disabled = false;
+    submitAssessmentButton.textContent = "Entregar evaluacion";
+  }
   updateAssessmentScoreboard();
 }
 
@@ -3821,13 +3866,11 @@ Los mecanismos de defensa ayudan a manejar conflictos internos y ansiedad.`;
   quizDifficultyInput.value = "intermedio";
 });
 
-nextAssessmentQuestionButton.addEventListener("click", () => {
-  if (currentAssessmentIndex < currentAssessment.length - 1) {
-    currentAssessmentIndex += 1;
-    updateAssessmentScoreboard();
-    renderAssessmentQuestion();
-  }
-});
+if (submitAssessmentButton) {
+  submitAssessmentButton.addEventListener("click", () => {
+    submitAssessment();
+  });
+}
 
 restartAssessmentButton.addEventListener("click", () => {
   if (lastAssessmentRequestData) {
@@ -3860,6 +3903,14 @@ assessmentForm.addEventListener("submit", async (event) => {
 
   if (!topic) {
     assessmentTopicInput.focus();
+    return;
+  }
+
+  if (!Number.isFinite(assessmentTotal) || assessmentTotal < 10) {
+    updateAssessmentUiState({
+      message: "La evaluacion final debe tener como minimo 10 preguntas."
+    });
+    assessmentTotalInput.focus();
     return;
   }
 
@@ -3950,6 +4001,6 @@ El inconsciente influye en la conducta humana y en los conflictos internos.
 La primera topica distingue consciente, preconsciente e inconsciente.
 La segunda topica organiza ello, yo y superyo.
 Los mecanismos de defensa buscan reducir la ansiedad y proteger al yo.`;
-  assessmentTotalInput.value = "5";
+  assessmentTotalInput.value = "10";
   assessmentDifficultyInput.value = "intermedio";
 });
