@@ -1441,6 +1441,9 @@ textarea {
 
 .assessment-actions > button {
   width: 100%;
+  color: #fff;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  box-shadow: 0 16px 30px rgba(47, 109, 246, 0.18);
 }
 
 .analysis-summary-grid,
