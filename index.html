@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Campus IA | Estudia con tarjetas inteligentes</title>
-    <link rel="stylesheet" href="./styles.css?v=20260414e" />
+    <link rel="stylesheet" href="./styles.css?v=20260507a" />
   </head>
   <body>
     <main class="app-shell">
@@ -493,14 +493,12 @@
           </div>
 
           <form id="flashcard-form">
-            <label for="subject">Materia</label>
-            <input
-              id="subject"
-              name="subject"
-              type="text"
-              placeholder="Ej: Biologia, Historia, Matematicas"
-              required
-            />
+            <label for="subject">Ramo</label>
+            <div class="module-subject-selector" data-module-subject-selector>
+              <input id="subject" name="subject" type="hidden" required />
+              <button type="button" class="module-subject-button" data-module-subject-button>Selecciona un ramo</button>
+              <div class="module-subject-menu" data-module-subject-menu hidden></div>
+            </div>
 
             <label for="topic">Tema</label>
             <input
@@ -663,14 +661,12 @@
           </div>
 
           <form id="summary-form">
-            <label for="summary-subject">Materia</label>
-            <input
-              id="summary-subject"
-              name="summarySubject"
-              type="text"
-              placeholder="Ej: Historia, Quimica, Lenguaje"
-              required
-            />
+            <label for="summary-subject">Ramo</label>
+            <div class="module-subject-selector" data-module-subject-selector>
+              <input id="summary-subject" name="summarySubject" type="hidden" required />
+              <button type="button" class="module-subject-button" data-module-subject-button>Selecciona un ramo</button>
+              <div class="module-subject-menu" data-module-subject-menu hidden></div>
+            </div>
 
             <label for="summary-topic">Tema</label>
             <input
@@ -803,14 +799,12 @@
           </div>
 
           <form id="quiz-form">
-            <label for="quiz-subject">Materia</label>
-            <input
-              id="quiz-subject"
-              name="quizSubject"
-              type="text"
-              placeholder="Ej: Biologia, Historia, Psicologia"
-              required
-            />
+            <label for="quiz-subject">Ramo</label>
+            <div class="module-subject-selector" data-module-subject-selector>
+              <input id="quiz-subject" name="quizSubject" type="hidden" required />
+              <button type="button" class="module-subject-button" data-module-subject-button>Selecciona un ramo</button>
+              <div class="module-subject-menu" data-module-subject-menu hidden></div>
+            </div>
 
             <label for="quiz-topic">Tema</label>
             <input
@@ -993,8 +987,12 @@
           </div>
 
           <form id="assessment-form">
-            <label for="assessment-subject">Materia</label>
-            <input id="assessment-subject" name="assessmentSubject" type="text" placeholder="Ej: Psicologia, Historia, Biologia" required />
+            <label for="assessment-subject">Ramo</label>
+            <div class="module-subject-selector" data-module-subject-selector>
+              <input id="assessment-subject" name="assessmentSubject" type="hidden" required />
+              <button type="button" class="module-subject-button" data-module-subject-button>Selecciona un ramo</button>
+              <div class="module-subject-menu" data-module-subject-menu hidden></div>
+            </div>
 
             <label for="assessment-topic">Tema</label>
             <input id="assessment-topic" name="assessmentTopic" type="text" placeholder="Ej: Psicoanalisis, independencia, celulas" required />
@@ -1191,6 +1189,6 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="./app.js?v=20260414e"></script>
+    <script src="./app.js?v=20260507a"></script>
   </body>
 </html>

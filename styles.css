@@ -1405,6 +1405,61 @@ textarea {
   gap: 12px;
 }
 
+.module-subject-selector {
+  position: relative;
+}
+
+.module-subject-button {
+  width: 100%;
+  min-height: 54px;
+  padding: 0 18px;
+  text-align: left;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(102, 117, 143, 0.2);
+  border-radius: 18px;
+  box-shadow: none;
+}
+
+.module-subject-button::after {
+  content: "▾";
+  float: right;
+  color: var(--muted);
+}
+
+.module-subject-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 18px;
+  border: 1px solid rgba(47, 109, 246, 0.14);
+  background:
+    linear-gradient(180deg, rgba(239, 246, 255, 0.96), rgba(255, 255, 255, 0.98)),
+    var(--surface);
+  box-shadow: 0 22px 44px rgba(40, 72, 126, 0.16);
+}
+
+.module-subject-option {
+  width: 100%;
+  min-height: 42px;
+  padding: 0 14px;
+  text-align: left;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.96);
+  color: var(--text);
+}
+
+.module-subject-option.is-active {
+  color: #fff;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  box-shadow: 0 16px 30px rgba(47, 109, 246, 0.2);
+}
+
 .concepts-list {
   display: grid;
   gap: 10px;

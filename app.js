@@ -61,6 +61,7 @@ const openViewButtons = document.querySelectorAll("[data-open-view]");
 const goHomeButtons = document.querySelectorAll("[data-go-home]");
 const moduleHomeButtons = document.querySelectorAll(".module-home-button");
 const moduleFloatStacks = document.querySelectorAll(".module-float-stack");
+const moduleSubjectSelectors = document.querySelectorAll("[data-module-subject-selector]");
 const pomodoroWidgets = document.querySelectorAll("[data-pomodoro-widget]");
 const pomodoroToggleButtons = document.querySelectorAll("[data-pomodoro-toggle]");
 const pomodoroPanels = document.querySelectorAll("[data-pomodoro-panel]");
@@ -473,6 +474,7 @@ function setSelectedStudySubject(subject, { persist = true, rerender = true } = 
     renderSubjectMenu();
   }
 
+  renderModuleSubjectSelectors();
   renderStudyAnalysis();
 }
 
@@ -937,19 +939,11 @@ function syncSelectedSubjectIntoModules() {
     return;
   }
 
-  if (!subjectInput.value.trim()) {
-    subjectInput.value = selectedStudySubject;
-  }
+  subjectInput.value = selectedStudySubject;
+  summarySubjectInput.value = selectedStudySubject;
+  quizSubjectInput.value = selectedStudySubject;
 
-  if (!summarySubjectInput.value.trim()) {
-    summarySubjectInput.value = selectedStudySubject;
-  }
-
-  if (!quizSubjectInput.value.trim()) {
-    quizSubjectInput.value = selectedStudySubject;
-  }
-
-  if (assessmentSubjectInput && !assessmentSubjectInput.value.trim()) {
+  if (assessmentSubjectInput) {
     assessmentSubjectInput.value = selectedStudySubject;
   }
 }
@@ -1133,6 +1127,46 @@ function updateActiveSubjectChip() {
 
   appCurrentSubject.hidden = false;
   appCurrentSubject.textContent = `Ramo activo: ${selectedStudySubject}`;
+}
+
+function closeModuleSubjectMenus() {
+  moduleSubjectSelectors.forEach((selector) => {
+    const menu = selector.querySelector("[data-module-subject-menu]");
+    if (menu) {
+      menu.hidden = true;
+    }
+  });
+}
+
+function renderModuleSubjectSelectors() {
+  moduleSubjectSelectors.forEach((selector) => {
+    const hiddenInput = selector.querySelector("input[type='hidden']");
+    const button = selector.querySelector("[data-module-subject-button]");
+    const menu = selector.querySelector("[data-module-subject-menu]");
+
+    if (!hiddenInput || !button || !menu) {
+      return;
+    }
+
+    hiddenInput.value = selectedStudySubject || "";
+    button.textContent = selectedStudySubject || "Selecciona un ramo";
+    button.disabled = !authenticatedUser?.user_metadata?.subjects?.length;
+    menu.innerHTML = "";
+
+    const subjects = getAcademicProfileFromUser(authenticatedUser || {}).subjects || [];
+
+    subjects.forEach((subject) => {
+      const option = document.createElement("button");
+      option.type = "button";
+      option.className = `module-subject-option ${subject === selectedStudySubject ? "is-active" : ""}`;
+      option.textContent = subject;
+      option.addEventListener("click", () => {
+        setSelectedStudySubject(subject);
+        closeModuleSubjectMenus();
+      });
+      menu.appendChild(option);
+    });
+  });
 }
 
 function renderSubjectMenu() {
@@ -3044,9 +3078,25 @@ subjectMenuButton.addEventListener("click", () => {
   }
 });
 
+moduleSubjectSelectors.forEach((selector) => {
+  const button = selector.querySelector("[data-module-subject-button]");
+  const menu = selector.querySelector("[data-module-subject-menu]");
+
+  if (!button || !menu) {
+    return;
+  }
+
+  button.addEventListener("click", () => {
+    const willOpen = menu.hidden;
+    closeModuleSubjectMenus();
+    menu.hidden = !willOpen;
+  });
+});
+
 appDrawerBackdrop.addEventListener("click", () => {
   closeAppDrawer();
   closeSubjectMenu();
+  closeModuleSubjectMenus();
 });
 
 signOutButtons.forEach((button) => {
@@ -3161,6 +3211,7 @@ document.addEventListener("click", (event) => {
   }
 
   if (
+    target.closest("[data-module-subject-selector]") ||
     target.closest("#app-drawer") ||
     target.closest("#subject-menu") ||
     target.closest("#menu-toggle-button") ||
@@ -3181,6 +3232,8 @@ document.addEventListener("click", (event) => {
   if (isSubjectMenuOpen) {
     closeSubjectMenu();
   }
+
+  closeModuleSubjectMenus();
 });
 
 window.addEventListener("scroll", updateFloatingHomeButtons, { passive: true });
