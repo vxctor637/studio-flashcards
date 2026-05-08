@@ -1697,6 +1697,13 @@ textarea {
   background: var(--primary);
 }
 
+#submit-assessment-button {
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 16px 34px rgba(47, 109, 246, 0.28);
+}
+
 .quiz-option {
   width: 100%;
   text-align: left;

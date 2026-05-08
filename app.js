@@ -232,6 +232,7 @@ let currentAssessmentHistoryEntryId = "";
 let pomodoroInterval = null;
 let pomodoroMenuOpen = false;
 let pomodoroAudioContext = null;
+let pomodoroAlertAudio = null;
 let authenticatedUser = null;
 let isDrawerOpen = false;
 let isSubjectMenuOpen = false;
@@ -259,6 +260,7 @@ const PDF_TEXT_LIMIT = 18000;
 const MIN_STUDY_NOTE_WORDS = 500;
 const FAKE_SESSION_KEY = "campusia.fakeSession";
 const FAKE_PROFILES_KEY = "campusia.fakeProfiles";
+const POMODORO_ALERT_AUDIO_SRC = "./sounds/pomodoro-alert.mp3";
 const DRAFT_WARNING_PREFS_KEY = "campusia.draftWarningPrefs";
 let draftWarningResolver = null;
 
@@ -638,7 +640,15 @@ async function attemptSubjectChange(subject) {
 }
 
 function getStudyHistory(user) {
-  return Array.isArray(user?.user_metadata?.study_history) ? user.user_metadata.study_history : [];
+  const rawHistory = Array.isArray(user?.user_metadata?.study_history) ? user.user_metadata.study_history : [];
+
+  return rawHistory.map((session) => ({
+    ...session,
+    entries: (session.entries || []).filter((entry) => {
+      const lines = Array.isArray(entry?.summaryLines) ? entry.summaryLines : [];
+      return !lines.some((line) => String(line).includes("Modo: Fallback local"));
+    })
+  }));
 }
 
 function normalizeStudyHistorySubjects(user) {
@@ -1356,6 +1366,36 @@ function formatPomodoroSeconds(totalSeconds) {
   return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
+function ensurePomodoroAlertAudio() {
+  if (typeof Audio === "undefined") {
+    return null;
+  }
+
+  if (!pomodoroAlertAudio) {
+    pomodoroAlertAudio = new Audio(POMODORO_ALERT_AUDIO_SRC);
+    pomodoroAlertAudio.preload = "auto";
+  }
+
+  return pomodoroAlertAudio;
+}
+
+async function playPomodoroAlertFile() {
+  const audio = ensurePomodoroAlertAudio();
+
+  if (!audio) {
+    return false;
+  }
+
+  try {
+    audio.pause();
+    audio.currentTime = 0;
+    await audio.play();
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+
 function ensurePomodoroAudioContext() {
   const AudioContextClass = window.AudioContext || window.webkitAudioContext;
 
@@ -1411,12 +1451,16 @@ async function playPomodoroBuzz() {
   }
 }
 
-function triggerPomodoroAlert() {
+async function triggerPomodoroAlert() {
   if (navigator.vibrate) {
     navigator.vibrate([180, 90, 180, 90, 180]);
   }
 
-  playPomodoroBuzz();
+  const playedLocalFile = await playPomodoroAlertFile();
+
+  if (!playedLocalFile) {
+    playPomodoroBuzz();
+  }
 }
 
 function stopPomodoroInterval() {
@@ -1446,7 +1490,7 @@ function startPomodoroCountdown(nextPhase, nextReadyPhase, durationSeconds) {
       stopPomodoroInterval();
       pomodoroState.remainingSeconds = 0;
       pomodoroState.phase = nextReadyPhase;
-      triggerPomodoroAlert();
+      void triggerPomodoroAlert();
       syncPomodoroUi();
       return;
     }
@@ -3593,24 +3637,6 @@ form.addEventListener("submit", async (event) => {
       state: "Fallback",
       message: `La IA no respondio correctamente. Se usaron tarjetas locales. Detalle: ${error instanceof Error ? error.message : "Error desconocido."}`
     });
-    addStudyHistoryEntry({
-      moduleName: "Tarjetas de estudio",
-      subject,
-      topic,
-      summaryLines: [
-        "Modo: Fallback local",
-        `Cantidad de tarjetas: ${currentCards.length}`,
-        `Nivel: ${difficulty}`,
-        `Detalle: ${error instanceof Error ? error.message : "Error desconocido."}`
-      ],
-      details: {
-        type: "flashcards",
-        cards: currentCards.map((card) => ({
-          question: card.question,
-          answer: card.answer
-        }))
-      }
-    });
   }
 });
 
@@ -3696,22 +3722,6 @@ summaryForm.addEventListener("submit", async (event) => {
     renderSummary(localSummary);
     updateSummaryUiState({
       message: `La IA no respondio correctamente. Se generaron apuntes locales. Detalle: ${error instanceof Error ? error.message : "Error desconocido."}`
-    });
-    addStudyHistoryEntry({
-      moduleName: "Generador de apuntes",
-      subject,
-      topic,
-      summaryLines: [
-        "Modo: Fallback local",
-        `Conceptos clave: ${keyConcepts.length > 0 ? keyConcepts.join(", ") : "No especificados"}`,
-        `Secciones generadas: ${localSummary.sections.length}`,
-        `Detalle: ${error instanceof Error ? error.message : "Error desconocido."}`
-      ],
-      details: {
-        type: "notes",
-        title: localSummary.title,
-        sections: localSummary.sections
-      }
     });
   } finally {
     finishNotesProgress();
@@ -3831,22 +3841,7 @@ quizForm.addEventListener("submit", async (event) => {
       message: `El quiz fue generado con IA y ya esta listo para practicar. Modelo: ${result.model || "Gemini"}.`
     });
   } catch (error) {
-    currentQuizHistoryEntryId = addStudyHistoryEntry({
-      moduleName: "Quiz interactivo",
-      subject,
-      topic,
-      summaryLines: [
-        "Modo: Fallback local",
-        `Nivel: ${difficulty}`,
-        `Preguntas solicitadas: ${quizTotal}`,
-        `Detalle: ${error instanceof Error ? error.message : "Error desconocido."}`
-      ],
-      details: {
-        type: "quiz",
-        score: "Pendiente",
-        questions: []
-      }
-    });
+    currentQuizHistoryEntryId = "";
     startQuiz(buildFallbackQuiz(requestData));
     updateQuizUiState({
       message: `La IA no respondio correctamente. Se genero un quiz local. Detalle: ${error instanceof Error ? error.message : "Error desconocido."}`
@@ -3943,22 +3938,7 @@ assessmentForm.addEventListener("submit", async (event) => {
       message: `La evaluacion fue generada con IA y ya esta lista para responder. Modelo: ${result.model || "Gemini"}.`
     });
   } catch (error) {
-    currentAssessmentHistoryEntryId = addStudyHistoryEntry({
-      moduleName: "Evaluacion final",
-      subject,
-      topic,
-      summaryLines: [
-        "Modo: Fallback local",
-        `Nivel: ${difficulty}`,
-        `Preguntas solicitadas: ${assessmentTotal}`,
-        `Detalle: ${error instanceof Error ? error.message : "Error desconocido."}`
-      ],
-      details: {
-        type: "assessment",
-        score: "Pendiente",
-        questions: []
-      }
-    });
+    currentAssessmentHistoryEntryId = "";
     startAssessment(buildFallbackAssessment(requestData));
     updateAssessmentUiState({
       message: `La IA no respondio correctamente. Se genero una evaluacion local. Detalle: ${error instanceof Error ? error.message : "Error desconocido."}`
