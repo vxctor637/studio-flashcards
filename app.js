@@ -1374,9 +1374,27 @@ function ensurePomodoroAlertAudio() {
   if (!pomodoroAlertAudio) {
     pomodoroAlertAudio = new Audio(POMODORO_ALERT_AUDIO_SRC);
     pomodoroAlertAudio.preload = "auto";
+    pomodoroAlertAudio.loop = true;
   }
 
   return pomodoroAlertAudio;
+}
+
+function stopPomodoroAlertSound() {
+  if (navigator.vibrate) {
+    navigator.vibrate(0);
+  }
+
+  if (!pomodoroAlertAudio) {
+    return;
+  }
+
+  try {
+    pomodoroAlertAudio.pause();
+    pomodoroAlertAudio.currentTime = 0;
+  } catch (error) {
+    console.warn("No fue posible detener el audio del pomodoro.", error);
+  }
 }
 
 async function playPomodoroAlertFile() {
@@ -1469,6 +1487,7 @@ function stopPomodoroInterval() {
 }
 
 function resetPomodoroState() {
+  stopPomodoroAlertSound();
   stopPomodoroInterval();
   pomodoroState.phase = "idle";
   pomodoroState.remainingSeconds = pomodoroState.studyMinutes * 60;
@@ -1477,6 +1496,7 @@ function resetPomodoroState() {
 }
 
 function startPomodoroCountdown(nextPhase, nextReadyPhase, durationSeconds) {
+  stopPomodoroAlertSound();
   stopPomodoroInterval();
   pomodoroState.phase = nextPhase;
   pomodoroState.remainingSeconds = durationSeconds;
@@ -1512,6 +1532,7 @@ function pausePomodoro() {
     return;
   }
 
+  stopPomodoroAlertSound();
   stopPomodoroInterval();
   pomodoroState.phase = pomodoroState.phase === "study" ? "paused-study" : "paused-break";
   syncPomodoroUi();
