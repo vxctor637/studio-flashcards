@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Campus IA | Estudia con tarjetas inteligentes</title>
-    <link rel="stylesheet" href="./styles.css?v=20260507c" />
+    <link rel="stylesheet" href="./styles.css?v=20260520a" />
   </head>
   <body>
     <main class="app-shell">
@@ -42,6 +42,9 @@
           </article>
 
           <div class="drawer-links">
+            <button type="button" class="secondary drawer-link" id="open-files-button" data-open-view="files">
+              Archivos
+            </button>
             <button type="button" class="secondary drawer-link" id="open-history-button" data-open-view="history">
               Historial de estudio
             </button>
@@ -241,6 +244,9 @@
                     Elige el ramo que quieres estudiar ahora. Podras editar esta informacion desde el menu.
                   </p>
                   <div id="session-subject-buttons" class="session-subject-buttons"></div>
+                  <button type="button" id="session-upload-files-button" class="secondary session-upload-files-button">
+                    Subir archivo
+                  </button>
                   <p id="session-selected-subject" class="session-selected-subject">
                     Todavia no has seleccionado un ramo para esta sesion.
                   </p>
@@ -332,6 +338,79 @@
               <button type="button" class="tool-action">Entrar al modulo</button>
             </article>
           </div>
+        </section>
+      </section>
+
+      <section class="view" id="files-view" data-view="files" hidden>
+        <section class="panel module-header">
+          <div class="module-header-row">
+            <div>
+              <p class="eyebrow">Modulo</p>
+              <h2>Archivos de estudio</h2>
+            </div>
+            <div class="module-float-stack">
+              <div class="pomodoro-widget" data-pomodoro-widget>
+                <button type="button" class="secondary pomodoro-bubble" data-pomodoro-toggle aria-label="Abrir temporizador pomodoro">
+                  <span class="pomodoro-split" data-pomodoro-split>
+                    <span class="pomodoro-segment is-study" data-pomodoro-study-display>25m</span>
+                    <span class="pomodoro-divider" aria-hidden="true"></span>
+                    <span class="pomodoro-segment is-break" data-pomodoro-break-display>5m</span>
+                  </span>
+                  <span class="pomodoro-action-label" data-pomodoro-action-label hidden>Comenzar break</span>
+                </button>
+                <div class="pomodoro-panel" data-pomodoro-panel hidden>
+                  <div class="pomodoro-panel-grid">
+                    <label>Minutos de estudio<input type="number" min="1" max="180" step="1" value="25" data-pomodoro-study-input /></label>
+                    <label>Minutos de break<input type="number" min="1" max="60" step="1" value="5" data-pomodoro-break-input /></label>
+                  </div>
+                  <div class="pomodoro-panel-actions">
+                    <button type="button" class="pomodoro-start-button" data-pomodoro-start>Comenzar temporizador</button>
+                    <button type="button" class="secondary pomodoro-pause-button" data-pomodoro-pause hidden>Pausar temporizador</button>
+                    <button type="button" class="secondary pomodoro-stop-button" data-pomodoro-stop hidden>Detener temporizador</button>
+                  </div>
+                </div>
+              </div>
+              <button type="button" class="secondary module-home-button" data-go-home>Volver al inicio</button>
+            </div>
+          </div>
+          <p class="module-copy">
+            Organiza tus PDFs y PPTX por ramo para generar tarjetas, apuntes, quizzes o evaluaciones desde ellos.
+          </p>
+        </section>
+
+        <section class="panel history-subjects-panel">
+          <div class="section-heading compact-heading">
+            <p class="eyebrow">Ramos</p>
+            <h2>Selecciona el ramo</h2>
+          </div>
+          <div id="files-subject-buttons" class="session-subject-buttons"></div>
+        </section>
+
+        <section class="panel history-sessions-panel">
+          <div class="results-header">
+            <div>
+              <p class="eyebrow">Archivos</p>
+              <h2>Biblioteca por ramo</h2>
+            </div>
+            <button type="button" id="files-add-button">Agregar archivos</button>
+          </div>
+
+          <p id="files-status-message" class="status-message">
+            Selecciona un ramo y agrega archivos PDF o PPTX.
+          </p>
+
+          <div id="files-empty-state" class="history-empty-state">
+            Aqui apareceran los archivos guardados para el ramo que estes estudiando.
+          </div>
+
+          <div id="files-list" class="study-files-list"></div>
+          <input
+            id="files-upload-input"
+            type="file"
+            accept="application/pdf,.pdf,application/vnd.openxmlformats-officedocument.presentationml.presentation,.pptx"
+            multiple
+            hidden
+          />
         </section>
       </section>
 
@@ -482,7 +561,7 @@
             </div>
           </div>
           <p class="module-copy">
-            Genera tarjetas desde materia, tema, apuntes escritos o PDFs con texto.
+            Genera tarjetas desde materia, tema, apuntes escritos o archivos PDF y PPTX.
           </p>
         </section>
 
@@ -556,23 +635,15 @@
           </form>
         </section>
 
-        <section class="panel summary-panel">
+        <section class="panel summary-panel" data-module-file-panel="flashcards">
           <div class="section-heading compact-heading">
             <p class="eyebrow">Sesion</p>
-            <h2>Estado de estudio</h2>
+            <h2>Generar desde archivo</h2>
           </div>
 
-          <div class="summary-row">
-            <span>Tarjetas generadas</span>
-            <strong id="card-count">0</strong>
-          </div>
-          <div class="summary-row">
-            <span>Modo activo</span>
-            <strong id="generation-mode">Listo para IA</strong>
-          </div>
-          <div class="summary-row">
-            <span>Estado</span>
-            <strong id="generation-status">Esperando datos</strong>
+          <div class="module-file-panel-list" data-module-file-list></div>
+          <div class="history-empty-state" data-module-file-empty>
+            Selecciona un ramo y carga archivos para generar tarjetas desde PDF o PPTX.
           </div>
         </section>
 
@@ -650,7 +721,7 @@
             </div>
           </div>
           <p class="module-copy">
-            Organiza materia, tema, conceptos clave y apuntes para obtener un apunte de estudio completo.
+            Organiza materia, tema, conceptos clave, apuntes y archivos para obtener un apunte de estudio completo.
           </p>
         </section>
 
@@ -707,6 +778,18 @@
               <button type="button" id="load-summary-demo" class="secondary">Cargar ejemplo</button>
             </div>
           </form>
+        </section>
+
+        <section class="panel summary-panel" data-module-file-panel="summaries">
+          <div class="section-heading compact-heading">
+            <p class="eyebrow">Sesion</p>
+            <h2>Generar desde archivo</h2>
+          </div>
+
+          <div class="module-file-panel-list" data-module-file-list></div>
+          <div class="history-empty-state" data-module-file-empty>
+            Selecciona un ramo y carga archivos para generar apuntes desde PDF o PPTX.
+          </div>
         </section>
 
         <section class="panel summary-output-panel">
@@ -788,7 +871,7 @@
             </div>
           </div>
           <p class="module-copy">
-            Genera preguntas de opcion multiple para practicar, revisar errores y medir tu avance.
+            Genera preguntas de opcion multiple para practicar, revisar errores y medir tu avance desde texto, PDF o PPTX.
           </p>
         </section>
 
@@ -850,23 +933,15 @@
           </form>
         </section>
 
-        <section class="panel summary-panel">
+        <section class="panel summary-panel" data-module-file-panel="quiz">
           <div class="section-heading compact-heading">
             <p class="eyebrow">Sesion</p>
-            <h2>Estado del quiz</h2>
+            <h2>Generar desde archivo</h2>
           </div>
 
-          <div class="summary-row">
-            <span>Preguntas</span>
-            <strong id="quiz-count">0</strong>
-          </div>
-          <div class="summary-row">
-            <span>Progreso</span>
-            <strong id="quiz-progress-label">Sin iniciar</strong>
-          </div>
-          <div class="summary-row">
-            <span>Puntaje</span>
-            <strong id="quiz-score-label">0/0</strong>
+          <div class="module-file-panel-list" data-module-file-list></div>
+          <div class="history-empty-state" data-module-file-empty>
+            Selecciona un ramo y carga archivos para generar quiz desde PDF o PPTX.
           </div>
         </section>
 
@@ -972,7 +1047,7 @@
             </div>
           </div>
           <p class="module-copy">
-            Mide tu nivel con una evaluacion basada en tu historial real de estudio o con contenido nuevo que quieras practicar.
+            Mide tu nivel con una evaluacion basada en tu historial real de estudio o con contenido nuevo que quieras practicar desde PDF o PPTX.
           </p>
         </section>
 
@@ -1037,22 +1112,14 @@
           </form>
         </section>
 
-        <section class="panel summary-panel">
+        <section class="panel summary-panel" data-module-file-panel="assessment">
           <div class="section-heading compact-heading">
             <p class="eyebrow">Sesion</p>
-            <h2>Estado de la evaluacion</h2>
+            <h2>Generar desde archivo</h2>
           </div>
-          <div class="summary-row">
-            <span>Preguntas</span>
-            <strong id="assessment-count">0</strong>
-          </div>
-          <div class="summary-row">
-            <span>Progreso</span>
-            <strong id="assessment-progress-label">Sin iniciar</strong>
-          </div>
-          <div class="summary-row">
-            <span>Puntaje</span>
-            <strong id="assessment-score-label">0/0</strong>
+          <div class="module-file-panel-list" data-module-file-list></div>
+          <div class="history-empty-state" data-module-file-empty>
+            Selecciona un ramo y carga archivos para generar evaluaciones desde PDF o PPTX.
           </div>
         </section>
 
@@ -1211,7 +1278,8 @@
     </template>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="./app.js?v=20260507c"></script>
+    <script src="./app.js?v=20260520a"></script>
   </body>
 </html>

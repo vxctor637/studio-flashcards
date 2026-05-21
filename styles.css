@@ -1028,6 +1028,10 @@ body::before {
   line-height: 1.65;
 }
 
+.session-upload-files-button {
+  margin-top: 14px;
+}
+
 .tools-panel,
 .panel {
   background: var(--surface);
@@ -1318,6 +1322,53 @@ body::before {
   display: grid;
   gap: 14px;
   align-content: start;
+}
+
+.module-file-panel-list,
+.study-files-list {
+  display: grid;
+  gap: 12px;
+}
+
+.module-file-item,
+.study-file-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(102, 117, 143, 0.16);
+  box-shadow: var(--shadow-soft);
+}
+
+.module-file-meta,
+.study-file-meta {
+  min-width: 0;
+}
+
+.module-file-meta strong,
+.study-file-meta strong,
+.module-file-meta p,
+.study-file-meta p {
+  display: block;
+  margin: 0;
+}
+
+.module-file-meta p,
+.study-file-meta p {
+  margin-top: 6px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.module-file-generate-button {
+  min-width: 104px;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 16px 30px rgba(47, 109, 246, 0.22);
 }
 
 .summary-row {

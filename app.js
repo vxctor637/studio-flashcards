@@ -37,8 +37,10 @@ const drawerAcademicForm = document.querySelector("#drawer-academic-form");
 const drawerAcademicTrackInput = document.querySelector("#drawer-academic-track");
 const drawerSubjectsList = document.querySelector("#drawer-subjects-list");
 const drawerAddSubjectButton = document.querySelector("#drawer-add-subject-button");
+const openFilesButton = document.querySelector("#open-files-button");
 const openHistoryButton = document.querySelector("#open-history-button");
 const openAnalysisButton = document.querySelector("#open-analysis-button");
+const sessionUploadFilesButton = document.querySelector("#session-upload-files-button");
 const historyEmptyState = document.querySelector("#history-empty-state");
 const historySubjectsList = document.querySelector("#history-subjects-list");
 const historySessionsList = document.querySelector("#history-sessions-list");
@@ -55,6 +57,12 @@ const homePreviewLabel = document.querySelector("#home-preview-label");
 const homePreviewTag = document.querySelector("#home-preview-tag");
 const homePreviewTitle = document.querySelector("#home-preview-title");
 const homePreviewCopy = document.querySelector("#home-preview-copy");
+const filesEmptyState = document.querySelector("#files-empty-state");
+const filesSubjectButtons = document.querySelector("#files-subject-buttons");
+const filesList = document.querySelector("#files-list");
+const filesAddButton = document.querySelector("#files-add-button");
+const filesUploadInput = document.querySelector("#files-upload-input");
+const filesStatusMessage = document.querySelector("#files-status-message");
 const summaryForm = document.querySelector("#summary-form");
 const views = document.querySelectorAll("[data-view]");
 const openViewButtons = document.querySelectorAll("[data-open-view]");
@@ -103,6 +111,7 @@ const generateSummaryButton = document.querySelector("#generate-summary-button")
 const loadSummaryDemoButton = document.querySelector("#load-summary-demo");
 const notesProgress = document.querySelector("#notes-progress");
 const notesProgressBar = document.querySelector("#notes-progress-bar");
+const moduleFilePanels = document.querySelectorAll("[data-module-file-panel]");
 const cardsGrid = document.querySelector("#cards-grid");
 const emptyState = document.querySelector("#empty-state");
 const cardCount = document.querySelector("#card-count");
@@ -257,11 +266,14 @@ const pomodoroState = {
 };
 
 const PDF_TEXT_LIMIT = 18000;
+const STUDY_FILE_TEXT_LIMIT = 24000;
 const MIN_STUDY_NOTE_WORDS = 500;
 const FAKE_SESSION_KEY = "campusia.fakeSession";
 const FAKE_PROFILES_KEY = "campusia.fakeProfiles";
+const STUDY_FILES_STORE_KEY = "campusia.studyFiles";
 const POMODORO_ALERT_AUDIO_SRC = "./sounds/pomodoro-alert.mp3";
 const DRAFT_WARNING_PREFS_KEY = "campusia.draftWarningPrefs";
+const STUDY_FILES_KEY = "study_files";
 let draftWarningResolver = null;
 
 if (window.pdfjsLib) {
@@ -419,7 +431,11 @@ function buildFakeUser(fullName, existingUser = null) {
       academic_track: currentMetadata.academic_track || "",
       subjects: Array.isArray(currentMetadata.subjects) ? currentMetadata.subjects : [],
       preferred_subject: currentMetadata.preferred_subject || "",
-      academic_attention: currentMetadata.academic_attention || { menu: false, edit: false }
+      academic_attention: currentMetadata.academic_attention || { menu: false, edit: false },
+      [STUDY_FILES_KEY]:
+        currentMetadata && typeof currentMetadata[STUDY_FILES_KEY] === "object" && currentMetadata[STUDY_FILES_KEY] !== null
+          ? currentMetadata[STUDY_FILES_KEY]
+          : {}
     }
   };
 }
@@ -620,6 +636,8 @@ function setSelectedStudySubject(subject, { persist = true, rerender = true } = 
   }
 
   renderModuleSubjectSelectors();
+  renderFilesView();
+  renderModuleFilePanels();
   renderStudyAnalysis();
 }
 
@@ -649,6 +667,174 @@ function getStudyHistory(user) {
       return !lines.some((line) => String(line).includes("Modo: Fallback local"));
     })
   }));
+}
+
+function getStudyFilesMap(user) {
+  const storageKey = normalizeStorageKey(user?.id || user?.email || user?.user_metadata?.full_name || "");
+
+  if (!storageKey) {
+    return {};
+  }
+
+  try {
+    const rawStore = window.localStorage.getItem(STUDY_FILES_STORE_KEY);
+    const parsedStore = rawStore ? JSON.parse(rawStore) : {};
+    const userFiles = parsedStore[storageKey];
+    return userFiles && typeof userFiles === "object" ? userFiles : {};
+  } catch (error) {
+    return {};
+  }
+}
+
+function getStudyFilesForSubject(user, subject) {
+  const files = getStudyFilesMap(user)[subject];
+  return Array.isArray(files) ? files : [];
+}
+
+function saveStudyFilesMap(nextFilesMap) {
+  if (!authenticatedUser) {
+    return;
+  }
+
+  const storageKey = normalizeStorageKey(authenticatedUser.id || authenticatedUser.email || authenticatedUser.user_metadata?.full_name || "");
+
+  if (!storageKey) {
+    return;
+  }
+
+  try {
+    const rawStore = window.localStorage.getItem(STUDY_FILES_STORE_KEY);
+    const parsedStore = rawStore ? JSON.parse(rawStore) : {};
+    parsedStore[storageKey] = nextFilesMap;
+    window.localStorage.setItem(STUDY_FILES_STORE_KEY, JSON.stringify(parsedStore));
+  } catch (error) {
+    console.warn("No fue posible guardar los archivos de estudio localmente.", error);
+  }
+}
+
+function getFileExtension(fileName = "") {
+  const lastDot = fileName.lastIndexOf(".");
+  return lastDot >= 0 ? fileName.slice(lastDot + 1).toLowerCase() : "";
+}
+
+function getStudyFileLabel(file) {
+  const typeLabel = file?.kind === "pptx" ? "PPTX" : "PDF";
+  const sizeLabel =
+    typeof file?.wordCount === "number" && file.wordCount > 0 ? `${file.wordCount} palabras aprox.` : "Texto listo";
+  return `${typeLabel} · ${sizeLabel}`;
+}
+
+function trimStudyFileText(text) {
+  const safeText = typeof text === "string" ? text.trim() : "";
+
+  if (safeText.length <= STUDY_FILE_TEXT_LIMIT) {
+    return { text: safeText, wasTrimmed: false };
+  }
+
+  return {
+    text: safeText.slice(0, STUDY_FILE_TEXT_LIMIT),
+    wasTrimmed: true
+  };
+}
+
+function extractXmlText(xmlText) {
+  const parser = new DOMParser();
+  const xml = parser.parseFromString(xmlText, "application/xml");
+  const textNodes = Array.from(xml.getElementsByTagNameNS("*", "t"));
+
+  return textNodes
+    .map((node) => node.textContent || "")
+    .join(" ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+async function extractPptxText(file) {
+  if (!window.JSZip) {
+    throw new Error("La libreria para leer PPTX no esta disponible en el navegador.");
+  }
+
+  const zip = await window.JSZip.loadAsync(await file.arrayBuffer());
+  const slideEntries = Object.keys(zip.files)
+    .filter((path) => /^ppt\/slides\/slide\d+\.xml$/i.test(path))
+    .sort((left, right) => {
+      const leftNumber = Number(left.match(/slide(\d+)\.xml/i)?.[1] || 0);
+      const rightNumber = Number(right.match(/slide(\d+)\.xml/i)?.[1] || 0);
+      return leftNumber - rightNumber;
+    });
+
+  if (slideEntries.length === 0) {
+    throw new Error("No se encontraron diapositivas legibles dentro del PPTX.");
+  }
+
+  const slideTexts = [];
+  for (const slidePath of slideEntries) {
+    const xmlText = await zip.files[slidePath].async("text");
+    const extracted = extractXmlText(xmlText);
+    if (extracted) {
+      slideTexts.push(extracted);
+    }
+  }
+
+  return {
+    slideCount: slideEntries.length,
+    text: slideTexts.join("\n\n")
+  };
+}
+
+function getStudyFileTopic(fileName = "") {
+  return fileName.replace(/\.[^/.]+$/, "").replace(/[_-]+/g, " ").trim() || "Tema del archivo";
+}
+
+async function saveStudyFileForCurrentSubject(file) {
+  if (!authenticatedUser || !selectedStudySubject) {
+    throw new Error("Primero selecciona un ramo activo para guardar archivos.");
+  }
+
+  const fileName = file?.name || "archivo";
+  const mimeType = file?.type || "";
+  const extension = getFileExtension(fileName);
+  const isPdf = mimeType === "application/pdf" || extension === "pdf";
+  const isPptx =
+    mimeType === "application/vnd.openxmlformats-officedocument.presentationml.presentation" || extension === "pptx";
+
+  if (!isPdf && !isPptx) {
+    throw new Error("Solo se permiten archivos PDF o PPTX.");
+  }
+
+  const extractionResult = isPdf ? await extractPdfText(file) : await extractPptxText(file);
+  const baseText = extractionResult.text || "";
+
+  if (!baseText.trim()) {
+    throw new Error("No se encontro texto util dentro del archivo.");
+  }
+
+  const trimmed = trimStudyFileText(baseText);
+  const nextFileEntry = {
+    id: `study-file-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    subject: selectedStudySubject,
+    name: fileName,
+    mimeType: isPdf
+      ? "application/pdf"
+      : "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    kind: isPdf ? "pdf" : "pptx",
+    topic: getStudyFileTopic(fileName),
+    text: trimmed.text,
+    wordCount: countWords(trimmed.text),
+    uploadedAt: new Date().toISOString(),
+    pageCount: typeof extractionResult.pageCount === "number" ? extractionResult.pageCount : undefined,
+    slideCount: typeof extractionResult.slideCount === "number" ? extractionResult.slideCount : undefined,
+    wasTrimmed: trimmed.wasTrimmed
+  };
+
+  const currentMap = getStudyFilesMap(authenticatedUser);
+  const nextSubjectFiles = [nextFileEntry, ...getStudyFilesForSubject(authenticatedUser, selectedStudySubject)];
+  saveStudyFilesMap({
+    ...currentMap,
+    [selectedStudySubject]: nextSubjectFiles
+  });
+
+  return nextFileEntry;
 }
 
 function normalizeStudyHistorySubjects(user) {
@@ -1240,8 +1426,10 @@ function applyAuthenticatedUser(user) {
     : "Tu informacion queda guardada en este navegador para seguir probando funciones sin iniciar sesion real.";
   appUserInitial.textContent = firstName.charAt(0).toUpperCase();
   renderAcademicProfile(user);
+  renderFilesView();
   renderStudyHistory(user);
   renderSubjectMenu();
+  renderModuleFilePanels();
   renderStudyAnalysis();
 }
 
@@ -1357,6 +1545,195 @@ function renderSubjectMenu() {
     });
     subjectMenuList.appendChild(button);
   });
+}
+
+function renderFilesView() {
+  if (!filesSubjectButtons || !filesList || !filesEmptyState || !filesStatusMessage) {
+    return;
+  }
+
+  const profile = getAcademicProfileFromUser(authenticatedUser || {});
+  const subjects = profile.subjects || [];
+  filesSubjectButtons.innerHTML = "";
+  filesList.innerHTML = "";
+
+  if (subjects.length === 0) {
+    filesEmptyState.hidden = false;
+    filesStatusMessage.textContent = "Primero crea tu perfil academico para organizar archivos por ramo.";
+    if (filesAddButton) {
+      filesAddButton.disabled = true;
+    }
+    return;
+  }
+
+  if (filesAddButton) {
+    filesAddButton.disabled = !selectedStudySubject;
+  }
+
+  filesEmptyState.hidden = true;
+  filesStatusMessage.textContent = selectedStudySubject
+    ? `Gestiona tus archivos de ${selectedStudySubject}. Puedes subir PDF o PPTX.`
+    : "Selecciona un ramo para ver sus archivos.";
+
+  subjects.forEach((subject) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = `session-subject-button ${subject === selectedStudySubject ? "is-active" : ""}`;
+    button.textContent = subject;
+    button.addEventListener("click", async () => {
+      await attemptSubjectChange(subject);
+      renderFilesView();
+      renderModuleFilePanels();
+    });
+    filesSubjectButtons.appendChild(button);
+  });
+
+  const files = getStudyFilesForSubject(authenticatedUser, selectedStudySubject);
+
+  if (files.length === 0) {
+    const emptyCard = document.createElement("div");
+    emptyCard.className = "history-empty-state";
+    emptyCard.textContent = "Todavia no hay archivos cargados en este ramo.";
+    filesList.appendChild(emptyCard);
+    return;
+  }
+
+  files.forEach((file) => {
+    const item = document.createElement("article");
+    item.className = "study-file-item";
+
+    const meta = document.createElement("div");
+    meta.className = "study-file-meta";
+
+    const name = document.createElement("strong");
+    name.textContent = file.name;
+
+    const info = document.createElement("p");
+    info.textContent = `${getStudyFileLabel(file)} · ${formatSessionDate(file.uploadedAt)}`;
+
+    meta.append(name, info);
+    item.appendChild(meta);
+    filesList.appendChild(item);
+  });
+}
+
+function renderModuleFilePanels() {
+  moduleFilePanels.forEach((panel) => {
+    const list = panel.querySelector("[data-module-file-list]");
+    const empty = panel.querySelector("[data-module-file-empty]");
+    const moduleType = panel.dataset.moduleFilePanel;
+
+    if (!list || !empty) {
+      return;
+    }
+
+    list.innerHTML = "";
+    const files = getStudyFilesForSubject(authenticatedUser, selectedStudySubject);
+
+    if (!selectedStudySubject || files.length === 0) {
+      empty.hidden = false;
+      empty.textContent = selectedStudySubject
+        ? "No hay archivos cargados en este ramo todavia."
+        : "Selecciona un ramo para usar archivos en este modulo.";
+      return;
+    }
+
+    empty.hidden = true;
+
+    files.forEach((file) => {
+      const item = document.createElement("article");
+      item.className = "module-file-item";
+
+      const meta = document.createElement("div");
+      meta.className = "module-file-meta";
+
+      const name = document.createElement("strong");
+      name.textContent = file.name;
+      const info = document.createElement("p");
+      info.textContent = getStudyFileLabel(file);
+      meta.append(name, info);
+
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "module-file-generate-button";
+      button.textContent = "Generar";
+      button.addEventListener("click", () => {
+        generateFromStoredFile(moduleType, file.id);
+      });
+
+      item.append(meta, button);
+      list.appendChild(item);
+    });
+  });
+}
+
+function getStoredStudyFileById(fileId) {
+  const filesMap = getStudyFilesMap(authenticatedUser || {});
+  const allFiles = Object.values(filesMap).flatMap((items) => (Array.isArray(items) ? items : []));
+  return allFiles.find((file) => file.id === fileId) || null;
+}
+
+function generateFromStoredFile(moduleType, fileId) {
+  const file = getStoredStudyFileById(fileId);
+
+  if (!file || !file.text) {
+    return;
+  }
+
+  if (file.subject && file.subject !== selectedStudySubject) {
+    setSelectedStudySubject(file.subject);
+  }
+
+  if (moduleType === "flashcards") {
+    showView("flashcards");
+    subjectInput.value = file.subject || selectedStudySubject;
+    topicInput.value = file.topic || getStudyFileTopic(file.name);
+    notesInput.value = file.text;
+    pdfFileInput.value = "";
+    updatePdfStatus(`Se uso "${file.name}" como base para generar tarjetas.`);
+    updateUiState({
+      mode: "Archivo seleccionado",
+      state: "Listo para generar",
+      message: `Se usara "${file.name}" como base para las tarjetas.`
+    });
+    form.requestSubmit();
+    return;
+  }
+
+  if (moduleType === "summaries") {
+    showView("summaries");
+    summarySubjectInput.value = file.subject || selectedStudySubject;
+    summaryTopicInput.value = file.topic || getStudyFileTopic(file.name);
+    summaryNotesInput.value = file.text;
+    updateSummaryUiState({
+      message: `Se usara "${file.name}" como base para generar apuntes.`
+    });
+    summaryForm.requestSubmit();
+    return;
+  }
+
+  if (moduleType === "quiz") {
+    showView("quiz");
+    quizSubjectInput.value = file.subject || selectedStudySubject;
+    quizTopicInput.value = file.topic || getStudyFileTopic(file.name);
+    quizNotesInput.value = file.text;
+    updateQuizUiState({
+      message: `Se usara "${file.name}" como base para generar el quiz.`
+    });
+    quizForm.requestSubmit();
+    return;
+  }
+
+  if (moduleType === "assessment") {
+    showView("assessment");
+    assessmentSubjectInput.value = file.subject || selectedStudySubject;
+    assessmentTopicInput.value = file.topic || getStudyFileTopic(file.name);
+    assessmentNotesInput.value = file.text;
+    updateAssessmentUiState({
+      message: `Se usara "${file.name}" como base para generar la evaluacion.`
+    });
+    assessmentForm.requestSubmit();
+  }
 }
 
 function formatPomodoroSeconds(totalSeconds) {
@@ -1724,8 +2101,12 @@ async function extractPdfText(file) {
 }
 
 function updateUiState({ mode, state, message, loading = false }) {
-  generationMode.textContent = mode;
-  generationStatus.textContent = state;
+  if (generationMode) {
+    generationMode.textContent = mode;
+  }
+  if (generationStatus) {
+    generationStatus.textContent = state;
+  }
   statusMessage.textContent = message;
   generateButton.disabled = loading;
   generateButton.textContent = loading ? "Generando..." : "Generar con IA";
@@ -1777,7 +2158,9 @@ function finishNotesProgress() {
 
 function renderCards(cards) {
   cardsGrid.innerHTML = "";
-  cardCount.textContent = String(cards.length);
+  if (cardCount) {
+    cardCount.textContent = String(cards.length);
+  }
   emptyState.hidden = cards.length > 0;
 
   cards.forEach((card) => {
@@ -2159,11 +2542,17 @@ function getDifficultyLabel(level) {
 }
 
 function updateQuizScoreboard() {
-  quizCount.textContent = String(currentQuiz.length);
-  quizScoreLabel.textContent = `${currentQuizScore}/${currentQuiz.length || 0}`;
+  if (quizCount) {
+    quizCount.textContent = String(currentQuiz.length);
+  }
+  if (quizScoreLabel) {
+    quizScoreLabel.textContent = `${currentQuizScore}/${currentQuiz.length || 0}`;
+  }
   quizLiveScore.textContent = `Puntaje: ${currentQuizScore}`;
-  quizProgressLabel.textContent =
-    currentQuiz.length > 0 ? `${Math.min(currentQuizIndex + 1, currentQuiz.length)}/${currentQuiz.length}` : "Sin iniciar";
+  if (quizProgressLabel) {
+    quizProgressLabel.textContent =
+      currentQuiz.length > 0 ? `${Math.min(currentQuizIndex + 1, currentQuiz.length)}/${currentQuiz.length}` : "Sin iniciar";
+  }
 }
 
 function createEmptyQuizResult() {
@@ -2291,7 +2680,9 @@ function renderQuizQuestion() {
         nextQuestionButton.hidden = false;
         nextQuestionButton.textContent = "Siguiente pregunta";
       } else {
-        quizProgressLabel.textContent = quizCurrentMode === "retry" ? "Reintento completado" : "Primera ronda completada";
+        if (quizProgressLabel) {
+          quizProgressLabel.textContent = quizCurrentMode === "retry" ? "Reintento completado" : "Primera ronda completada";
+        }
         quizTransitionTimeout = window.setTimeout(() => {
           finishQuizRound();
         }, 1200);
@@ -2493,15 +2884,21 @@ function updateAssessmentUiState({ message, loading = false }) {
 }
 
 function updateAssessmentScoreboard() {
-  assessmentCount.textContent = String(currentAssessment.length);
-  assessmentScoreLabel.textContent = `${currentAssessmentScore}/${currentAssessment.length || 0}`;
+  if (assessmentCount) {
+    assessmentCount.textContent = String(currentAssessment.length);
+  }
+  if (assessmentScoreLabel) {
+    assessmentScoreLabel.textContent = `${currentAssessmentScore}/${currentAssessment.length || 0}`;
+  }
   assessmentLiveScore.textContent = `Puntaje: ${currentAssessmentScore}`;
-  assessmentProgressLabel.textContent =
+  if (assessmentProgressLabel) {
+    assessmentProgressLabel.textContent =
     currentAssessment.length > 0
       ? assessmentSubmitted
         ? `Entregada · ${currentAssessment.length} preguntas`
         : `Pendiente · ${currentAssessment.length} preguntas`
       : "Sin iniciar";
+  }
 }
 
 function renderAssessmentQuestion() {
@@ -3106,6 +3503,55 @@ async function handlePdfSelection(file) {
   }
 }
 
+function openFilesViewAndPicker() {
+  if (!selectedStudySubject) {
+    return;
+  }
+
+  showView("files");
+  renderFilesView();
+  window.setTimeout(() => {
+    filesUploadInput?.click();
+  }, 60);
+}
+
+async function handleStudyFilesUpload(fileList) {
+  if (!authenticatedUser || !selectedStudySubject || !fileList?.length) {
+    return;
+  }
+
+  filesStatusMessage.textContent = `Procesando ${fileList.length} archivo(s) para ${selectedStudySubject}...`;
+  filesAddButton.disabled = true;
+
+  const uploadedNames = [];
+  const failedFiles = [];
+
+  for (const file of Array.from(fileList)) {
+    try {
+      const savedFile = await saveStudyFileForCurrentSubject(file);
+      uploadedNames.push(savedFile.name);
+    } catch (error) {
+      failedFiles.push(`${file.name}: ${error instanceof Error ? error.message : "Error desconocido."}`);
+    }
+  }
+
+  renderFilesView();
+  renderModuleFilePanels();
+
+  if (uploadedNames.length > 0 && failedFiles.length === 0) {
+    filesStatusMessage.textContent =
+      uploadedNames.length === 1
+        ? `Archivo guardado correctamente en ${selectedStudySubject}: ${uploadedNames[0]}.`
+        : `Se guardaron ${uploadedNames.length} archivos correctamente en ${selectedStudySubject}.`;
+  } else if (uploadedNames.length > 0) {
+    filesStatusMessage.textContent = `Se guardaron ${uploadedNames.length} archivos, pero hubo problemas con otros: ${failedFiles.join(" | ")}`;
+  } else {
+    filesStatusMessage.textContent = `No se pudieron guardar los archivos: ${failedFiles.join(" | ")}`;
+  }
+
+  filesAddButton.disabled = false;
+}
+
 function shuffleCards() {
   currentCards = [...currentCards].sort(() => Math.random() - 0.5);
   renderCards(currentCards);
@@ -3115,6 +3561,31 @@ pdfFileInput.addEventListener("change", async (event) => {
   const selectedFile = event.target.files?.[0];
   await handlePdfSelection(selectedFile);
 });
+
+if (sessionUploadFilesButton) {
+  sessionUploadFilesButton.addEventListener("click", () => {
+    openFilesViewAndPicker();
+  });
+}
+
+if (filesAddButton) {
+  filesAddButton.addEventListener("click", () => {
+    if (!selectedStudySubject) {
+      filesStatusMessage.textContent = "Selecciona un ramo antes de agregar archivos.";
+      return;
+    }
+
+    filesUploadInput?.click();
+  });
+}
+
+if (filesUploadInput) {
+  filesUploadInput.addEventListener("change", async (event) => {
+    const selectedFiles = event.target.files;
+    await handleStudyFilesUpload(selectedFiles);
+    filesUploadInput.value = "";
+  });
+}
 
 authForm.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -3217,6 +3688,10 @@ openViewButtons.forEach((button) => {
 
     if (targetView) {
       showView(targetView);
+
+      if (targetView === "files") {
+        renderFilesView();
+      }
 
       if (targetView === "history" && authenticatedUser) {
         renderStudyHistory(authenticatedUser);
